@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Peças RJ — Buscador de Fornecedores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────────────── */
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #16161f;
+  --surface2:  #1e1e2a;
+  --border:    #252530;
+  --border2:   #32323f;
+  --accent:    #e8ff47;
+  --orange:    #ff6b35;
+  --blue:      #60a5fa;
+  --green:     #4ade80;
+  --red:       #f87171;
+  --yellow:    #fbbf24;
+  --text:      #e8e8f0;
+  --text-dim:  #8888a0;
+  --text-mute: #55556a;
+  --font-d:    'Bebas Neue', sans-serif;
+  --font-b:    'DM Sans', sans-serif;
+  --font-m:    'JetBrains Mono', monospace;
+  --r:  8px;
+  --r2: 12px;
+}
+
+/* ── RESET ───────────────────────────────────────────── */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-b);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    linear-gradient(rgba(232,255,71,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232,255,71,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { cursor: pointer; font-family: var(--font-d); border: none; outline: none; }
+select, input { font-family: var(--font-b); outline: none; }
+input::placeholder { color: var(--text-mute); }
+
+/* ── SCROLLBAR ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-mute); }
+
+/* ── HEADER ──────────────────────────────────────────── */
+.header {
+  padding: 32px 32px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-end; gap: 16px;
+  position: relative;
+}
+.header::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(232,255,71,.05) 0%, transparent 100%);
+  pointer-events: none;
+}
+.logo-block { display: flex; flex-direction: column; gap: 2px; }
+.logo {
+  font-family: var(--font-d);
+  font-size: clamp(32px, 5vw, 56px);
+  letter-spacing: 4px;
+  color: var(--accent);
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(232,255,71,.3);
+}
+.logo span { color: var(--orange); }
+.tagline {
+  font-family: var(--font-m);
+  font-size: 11px;
+  color: var(--text-mute);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.header-badge {
+  margin-left: auto;
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--text-mute);
+  letter-spacing: 1px;
+  text-align: right;
+  line-height: 1.6;
+}
+
+/* ── LAYOUT ──────────────────────────────────────────── */
+.main { max-width: 1400px; margin: 0 auto; padding: 24px 32px 64px; }
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+@media (max-width: 900px) { .controls-grid { grid-template-columns: 1fr; } }
+
+/* ── PANEL ───────────────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 20px;
+}
+.panel-title {
+  font-family: var(--font-d);
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--text);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-title::before {
+  content: ''; display: block; width: 3px; height: 18px;
+  background: var(--accent); border-radius: 2px;
+}
+
+/* ── API KEYS ────────────────────────────────────────── */
+.key-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.key-row:last-child { margin-bottom: 0; }
+.key-label {
+  font-family: var(--font-m); font-size: 10px;
+  color: var(--text-dim); letter-spacing: 1px;
+  white-space: nowrap; width: 60px; flex-shrink: 0;
+}
+.key-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  color: var(--text);
+  font-family: var(--font-m);
+  font-size: 11px;
+  transition: border-color .2s;
+}
+.key-input:focus { border-color: var(--accent); }
+.key-status {
+  font-family: var(--font-m); font-size: 9px;
+  letter-spacing: 1px; padding: 3px 7px; border-radius: 4px;
+  white-space: nowrap; flex-shrink: 0; transition: all .2s;
+}
+.key-status.ok  { background: rgba(74,222,128,.15); color: var(--green); border: 1px solid rgba(74,222,128,.3); }
+.key-status.bad { background: rgba(136,136,160,.1);  color: var(--text-mute); border: 1px solid var(--border); }
+
+/* ── SEARCH PANEL ────────────────────────────────────── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: end;
+}
+@media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label {
+  font-family: var(--font-m); font-size: 10px;
+  color: var(--text-mute); letter-spacing: 1.5px; text-transform: uppercase;
+}
+.form-select {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  color: var(--text); font-size: 13px;
+  transition: border-color .2s; width: 100%;
+}
+.form-select:focus { border-color: var(--accent); }
+.form-select option { background: var(--surface2); }
+
+/* ── CUSTOM MULTI-SELECT ─────────────────────────────── */
+.ms-wrapper { position: relative; }
+.ms-trigger {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  color: var(--text); font-size: 13px; font-family: var(--font-b);
+  width: 100%; text-align: left;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  transition: border-color .2s;
+}
+.ms-trigger:hover, .ms-trigger.open { border-color: var(--accent); }
+.ms-trigger-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-arrow { color: var(--text-mute); transition: transform .2s; flex-shrink: 0; font-size: 10px; }
+.ms-trigger.open .ms-arrow { transform: rotate(180deg); }
+.ms-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--r2); overflow: hidden;
+  max-height: 320px; overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+  display: none;
+}
+.ms-dropdown.open { display: block; }
+.ms-actions {
+  display: flex; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--surface); z-index: 1;
+}
+.ms-action-btn {
+  flex: 1; padding: 8px; font-family: var(--font-m); font-size: 10px;
+  letter-spacing: 1px; background: transparent; color: var(--text-mute);
+  border: none; border-right: 1px solid var(--border); transition: all .15s;
+}
+.ms-action-btn:last-child { border-right: none; }
+.ms-action-btn:hover { background: var(--surface2); color: var(--text); }
+.ms-zone-header {
+  padding: 10px 12px 4px;
+  font-family: var(--font-m); font-size: 10px;
+  color: var(--accent); letter-spacing: 2px; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  background: rgba(232,255,71,.03);
+}
+.ms-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; cursor: pointer; transition: background .1s;
+}
+.ms-item:hover { background: var(--surface2); }
+.ms-item input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
+.ms-item label { font-size: 13px; cursor: pointer; flex: 1; }
+.ms-count-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent); color: #000;
+  font-family: var(--font-m); font-size: 10px; font-weight: 700;
+  min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; margin-left: 4px;
+}
+
+/* ── BUTTONS ─────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: var(--r);
+  font-family: var(--font-d); letter-spacing: 1.5px;
+  font-size: 16px; transition: all .2s; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { background: #f5ff80; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(232,255,71,.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { background: var(--border2); color: var(--text-mute); cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+.btn-outline:hover { border-color: var(--text-dim); background: var(--surface2); }
+.btn-blue { background: rgba(96,165,250,.15); color: var(--blue); border: 1px solid rgba(96,165,250,.3); }
+.btn-blue:hover { background: rgba(96,165,250,.25); transform: translateY(-1px); }
+.btn-blue:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 7px 14px; font-size: 13px; letter-spacing: 1px; }
+.btn-xs { padding: 4px 9px; font-size: 12px; letter-spacing: .5px; border-radius: 5px; }
+
+/* ── RESULTS TOOLBAR ─────────────────────────────────── */
+.results-toolbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r2); margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.results-stat { font-family: var(--font-m); font-size: 12px; color: var(--text-dim); margin-right: auto; }
+.results-stat strong { color: var(--accent); font-size: 14px; }
+.toolbar-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+.filter-select {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--r); padding: 7px 10px;
+  color: var(--text); font-size: 12px; min-width: 160px;
+}
+
+/* ── SCRAPE PROGRESS BAR ─────────────────────────────── */
+.scrape-bar {
+  display: none;
+  background: var(--surface); border: 1px solid rgba(96,165,250,.3);
+  border-radius: var(--r2); padding: 13px 16px;
+  margin-bottom: 16px;
+  align-items: center; gap: 12px;
+}
+.scrape-bar.visible { display: flex; }
+.scrape-label { font-family: var(--font-m); font-size: 12px; color: var(--blue); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scrape-count { font-family: var(--font-m); font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
+.progress-track { flex: 1; height: 4px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width .4s ease; }
+.btn-stop {
+  font-family: var(--font-m); font-size: 10px; letter-spacing: 1px;
+  padding: 5px 10px;
+  background: rgba(248,113,113,.15); color: var(--red); border: 1px solid rgba(248,113,113,.3); border-radius: 5px;
+  cursor: pointer; flex-shrink: 0;
+}
+.btn-stop:hover { background: rgba(248,113,113,.25); }
+
+/* ── NEIGHBORHOOD GROUP ──────────────────────────────── */
+.neighborhood-group { margin-bottom: 36px; }
+.group-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.group-name { font-family: var(--font-d); font-size: 22px; letter-spacing: 2px; color: var(--text); }
+.group-count { font-family: var(--font-m); font-size: 11px; color: var(--text-mute); letter-spacing: 1px; }
+.group-divider { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+
+/* ── CARDS GRID ──────────────────────────────────────── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+}
+
+/* ── CARD ────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  animation: fadeInUp .35s ease both;
+  transition: border-color .2s, transform .2s, box-shadow .2s;
+  position: relative; overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--border2); transition: background .2s;
+}
+.card:hover { border-color: var(--border2); transform: translateX(2px); box-shadow: 0 4px 24px rgba(0,0,0,.4); }
+.card:hover::before { background: var(--accent); }
+.card.email-found::before { background: var(--green); }
+.card.email-empty::before { background: var(--red); }
+
+/* Card Header */
+.card-header { display: flex; align-items: flex-start; gap: 8px; }
+.card-name { font-family: var(--font-d); font-size: 17px; letter-spacing: 1px; color: var(--text); flex: 1; line-height: 1.2; }
+.badge {
+  font-family: var(--font-m); font-size: 9px; letter-spacing: 1px;
+  padding: 3px 7px; border-radius: 4px; flex-shrink: 0; margin-top: 2px;
+}
+.badge-open   { background: rgba(74,222,128,.15); color: var(--green); border: 1px solid rgba(74,222,128,.3); }
+.badge-closed { background: rgba(248,113,113,.15); color: var(--red);   border: 1px solid rgba(248,113,113,.3); }
+.badge-unk    { background: rgba(136,136,160,.1);  color: var(--text-mute); border: 1px solid var(--border); }
+
+/* Rating */
+.rating-row { display: flex; align-items: center; gap: 6px; }
+.stars { color: var(--yellow); font-size: 13px; letter-spacing: 1px; }
+.rating-val { font-family: var(--font-m); font-size: 12px; color: var(--text); }
+.rating-cnt { font-family: var(--font-m); font-size: 11px; color: var(--text-mute); }
+
+/* Meta */
+.card-meta { display: flex; flex-direction: column; gap: 6px; }
+.meta-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.4; }
+.meta-icon { font-size: 11px; width: 16px; text-align: center; flex-shrink: 0; margin-top: 1px; opacity: .7; }
+.meta-text { color: var(--text-dim); }
+.meta-link { color: var(--blue); word-break: break-all; }
+.meta-link:hover { color: var(--accent); }
+
+/* Card Footer */
+.card-footer { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.email-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.email-indicator { font-family: var(--font-m); font-size: 10px; letter-spacing: .5px; }
+.ind-found   { color: var(--green); }
+.ind-empty   { color: var(--red); }
+.ind-pending { color: var(--text-mute); }
+.email-tags  { display: flex; flex-wrap: wrap; gap: 6px; }
+.email-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(74,222,128,.1); border: 1px solid rgba(74,222,128,.25);
+  border-radius: 4px; padding: 3px 8px;
+  font-family: var(--font-m); font-size: 11px; color: var(--green);
+}
+.email-tag:hover { background: rgba(74,222,128,.2); text-decoration: none; }
+.no-site-note { font-family: var(--font-m); font-size: 11px; color: var(--text-mute); }
+.scraping-note { font-family: var(--font-m); font-size: 11px; color: var(--blue); display: flex; align-items: center; gap: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  display: inline-block; width: 12px; height: 12px;
+  border: 2px solid rgba(96,165,250,.3); border-top-color: var(--blue);
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+
+/* ── STATE BOXES ─────────────────────────────────────── */
+.state-box {
+  text-align: center; padding: 60px 20px;
+  border: 1px dashed var(--border2); border-radius: var(--r2);
+}
+.state-icon  { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.state-title { font-family: var(--font-d); font-size: 22px; letter-spacing: 2px; color: var(--text-dim); }
+.state-sub   { font-size: 13px; color: var(--text-mute); margin-top: 6px; }
+
+/* Skeleton loader */
+.loading-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px,1fr)); gap: 14px; }
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+.skeleton {
+  height: 180px; border-radius: var(--r2);
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface2) 50%, var(--surface) 100%);
+  background-size: 1200px 100%;
+  animation: shimmer 1.5s infinite;
+  border: 1px solid var(--border);
+}
+
+/* ── TOAST ────────────────────────────────────────────── */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  font-family: var(--font-m); font-size: 12px; letter-spacing: .5px;
+  padding: 10px 16px; border-radius: var(--r);
+  background: var(--surface); border: 1px solid var(--border2);
+  color: var(--text); min-width: 240px;
+  animation: fadeInUp .25s ease both;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5);
+}
+.toast.success { border-color: rgba(74,222,128,.4);  color: var(--green); }
+.toast.error   { border-color: rgba(248,113,113,.4); color: var(--red);   }
+.toast.info    { border-color: rgba(96,165,250,.4);  color: var(--blue);  }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ─── HEADER ───────────────────────────────────────── -->
+<header class="header">
+  <div class="logo-block">
+    <div class="logo">AUTO PEÇAS <span>RJ</span></div>
+    <div class="tagline">Buscador de Fornecedores · Rio de Janeiro</div>
+  </div>
+  <div class="header-badge">
+    Google Places API<br>+ Claude AI Email Extractor
+  </div>
+</header>
+
+<!-- ─── MAIN ─────────────────────────────────────────── -->
+<main class="main">
+
+  <div class="controls-grid">
+
+    <!-- API Keys -->
+    <div class="panel">
+      <div class="panel-title">Chaves de API</div>
+      <div class="key-row">
+        <span class="key-label">GOOGLE</span>
+        <input class="key-input" id="googleKey" type="password" placeholder="Chave Google..." autocomplete="off">
+        <span class="key-status bad" id="googleStatus">SEM CHAVE</span>
+      </div>
+      <div class="key-row">
+        <span class="key-label">CLAUDE</span>
+        <input class="key-input" id="anthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off">
+        <span class="key-status bad" id="anthropicStatus">SEM CHAVE</span>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="panel">
+      <div class="panel-title">Busca</div>
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label class="form-label">Bairros (múltiplos)</label>
+          <div class="ms-wrapper" id="msWrapper">
+            <button class="ms-trigger" id="msTrigger" type="button">
+              <span class="ms-trigger-text" id="msTriggerText">Selecione bairros...</span>
+              <span class="ms-arrow">▼</span>
+            </button>
+            <div class="ms-dropdown" id="msDropdown">
+              <div class="ms-actions">
+                <button class="ms-action-btn" onclick="msSelectAll(event)">TODOS</button>
+                <button class="ms-action-btn" onclick="msClear(event)">LIMPAR</button>
+              </div>
+              <!-- populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tipo de Negócio</label>
+          <select class="form-select" id="searchType">
+            <option value="auto peças">Auto Peças</option>
+            <option value="distribuidora de auto peças">Distribuidoras</option>
+            <option value="peças importadas automotivas">Peças Importadas</option>
+            <option value="pneus e rodas">Pneus e Rodas</option>
+            <option value="oficina mecânica">Oficinas Mecânicas</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="opacity:0">&#8203;</label>
+          <button class="btn btn-primary" id="btnSearch" onclick="doSearch()">⌕ BUSCAR</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /controls-grid -->
+
+  <!-- Results Toolbar -->
+  <div class="results-toolbar hidden" id="resultsToolbar">
+    <div class="results-stat">
+      <strong id="totalCount">0</strong> empresas · <strong id="totalNeighborhoods">0</strong> bairros
+    </div>
+    <div class="toolbar-sep"></div>
+    <select class="filter-select" id="neighborhoodFilter" onchange="applyFilter()">
+      <option value="">Todos os bairros</option>
+    </select>
+    <div class="toolbar-sep"></div>
+    <button class="btn btn-blue btn-sm" id="btnScrapeAll" onclick="scrapeAll()">✉ BUSCAR EMAILS DE TODOS</button>
+    <button class="btn btn-outline btn-sm" id="btnExport" onclick="exportCSV()">⬇ CSV</button>
+  </div>
+
+  <!-- Scrape Progress Bar -->
+  <div class="scrape-bar" id="scrapeBar">
+    <div class="spinner"></div>
+    <span class="scrape-label" id="scrapeLabel">Buscando emails...</span>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <span class="scrape-count" id="scrapeCount">0 / 0</span>
+    <button class="btn-stop" onclick="stopScrape()">■ PARAR</button>
+  </div>
+
+  <!-- Results Area -->
+  <div id="resultsArea">
+    <div class="state-box">
+      <div class="state-icon">🔧</div>
+      <div class="state-title">AGUARDANDO BUSCA</div>
+      <div class="state-sub">Configure as chaves de API, selecione bairros e clique em Buscar</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ─── JAVASCRIPT ────────────────────────────────────── -->
+<script>
+'use strict';
+// Limpa chaves antigas do localStorage ao iniciar
+try {
+  localStorage.removeItem('apcrj_gkey');
+  localStorage.removeItem('apcrj_akey');
+} catch(e) {}
+
+// ── CONSTANTS ──────────────────────────────────────────
+const CORS_PROXY      = 'https://corsproxy.io/?';
+const GOOGLE_NEW      = 'https://places.googleapis.com/v1/places';
+const FIELD_MASK_LIST = 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,places.currentOpeningHours,places.googleMapsUri';
+const FIELD_MASK_DET  = 'id,displayName,formattedAddress,nationalPhoneNumber,websiteUri,rating,userRatingCount,currentOpeningHours,googleMapsUri';
+const ANTHROPIC_URL   = 'https://api.anthropic.com/v1/messages';
+const CLAUDE_MODEL    = 'claude-sonnet-4-20250514';
+const LS_RESULTS_KEY  = 'apcrj_results_v1';
+const LS_GOOGLE_KEY   = 'apcrj_gkey';
+const LS_ANTHROPIC_KEY= 'apcrj_akey';
+
+// ── NEIGHBORHOODS DATA ─────────────────────────────────
+const NEIGHBORHOODS = {
+  'Zona Sul': [
+    'Copacabana','Ipanema','Leblon','Botafogo','Flamengo',
+    'Laranjeiras','Catete','Glória','Urca','Leme',
+    'Gávea','Jardim Botânico','Lagoa','Humaitá'
+  ],
+  'Zona Norte': [
+    'Méier','Madureira','Penha','Ilha do Governador','São Cristóvão',
+    'Tijuca','Vila Isabel','Engenho Novo','Ramos','Olaria',
+    'Brás de Pina','Inhaúma','Del Castilho','Cachambi'
+  ],
+  'Zona Oeste': [
+    'Barra da Tijuca','Jacarepaguá','Campo Grande','Santa Cruz',
+    'Realengo','Bangu','Taquara','Pechincha','Praça Seca',
+    'Sulacap','Padre Miguel'
+  ],
+  'Centro e Arredores': [
+    'Centro','Catumbi','Rio Comprido','Cidade Nova',
+    'Lapa','Estácio','Benfica','Gamboa'
+  ]
+};
+const ALL_NEIGHBORHOODS = Object.values(NEIGHBORHOODS).flat();
+
+// ── STATE ──────────────────────────────────────────────
+const state = {
+  googleKey: '',
+  anthropicKey: '',
+  results: [],
+  selectedNeighborhoods: [],
+  filterNeighborhood: '',
+  isScraping: false,
+  scrapeStop: false,
+};
+
+// ── INIT ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  buildMultiSelect();
+  loadFromStorage();
+  setupKeyInputs();
+  setupClickOutside();
+});
+
+// ── API KEY INPUTS ─────────────────────────────────────
+function setupKeyInputs() {
+  const gEl = document.getElementById('googleKey');
+  const aEl = document.getElementById('anthropicKey');
+  gEl.addEventListener('input', () => {
+    state.googleKey = gEl.value.trim();
+    setKeyStatus('google', state.googleKey);
+    try { localStorage.setItem(LS_GOOGLE_KEY, state.googleKey); } catch(e){}
+  });
+  aEl.addEventListener('input', () => {
+    state.anthropicKey = aEl.value.trim();
+    setKeyStatus('anthropic', state.anthropicKey);
+    try { localStorage.setItem(LS_ANTHROPIC_KEY, state.anthropicKey); } catch(e){}
+  });
+}
+
+function setKeyStatus(which, val) {
+  const el = document.getElementById(which === 'google' ? 'googleStatus' : 'anthropicStatus');
+  const valid = which === 'google' ? val.length > 20 : val.startsWith('sk-ant');
+  if (!val)       { el.textContent = 'SEM CHAVE'; el.className = 'key-status bad'; }
+  else if (valid) { el.textContent = 'PRONTO';    el.className = 'key-status ok';  }
+  else            { el.textContent = 'INVÁLIDA';  el.className = 'key-status bad'; }
+}
+
+// ── MULTI-SELECT ───────────────────────────────────────
+function buildMultiSelect() {
+  const dropdown = document.getElementById('msDropdown');
+  for (const [zone, list] of Object.entries(NEIGHBORHOODS)) {
+    const zEl = document.createElement('div');
+    zEl.className = 'ms-zone-header';
+    zEl.textContent = zone;
+    dropdown.appendChild(zEl);
+    for (const n of list) {
+      const id = 'ms_' + n.replace(/\s/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+      const item = document.createElement('div');
+      item.className = 'ms-item';
+      item.innerHTML = `<input type="checkbox" id="${id}" value="${escAttr(n)}" onchange="msUpdate()"><label for="${id}">${esc(n)}</label>`;
+      dropdown.appendChild(item);
+    }
+  }
+}
+
+document.getElementById('msTrigger').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('msDropdown').classList.toggle('open');
+  document.getElementById('msTrigger').classList.toggle('open');
+});
+
+function setupClickOutside() {
+  document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('msWrapper');
+    if (!wrap.contains(e.target)) {
+      document.getElementById('msDropdown').classList.remove('open');
+      document.getElementById('msTrigger').classList.remove('open');
+    }
+  });
+}
+
+function msUpdate() {
+  const checked = document.querySelectorAll('#msDropdown input[type=checkbox]:checked');
+  state.selectedNeighborhoods = Array.from(checked).map(c => c.value);
+  renderMsTrigger();
+}
+
+function renderMsTrigger() {
+  const txt = document.getElementById('msTriggerText');
+  const n = state.selectedNeighborhoods.length;
+  if (n === 0) { txt.innerHTML = 'Selecione bairros...'; return; }
+  if (n <= 3)  { txt.innerHTML = state.selectedNeighborhoods.map(esc).join(', '); return; }
+  const preview = state.selectedNeighborhoods.slice(0,2).map(esc).join(', ');
+  txt.innerHTML = `${preview} <span class="ms-count-badge">+${n-2}</span>`;
+}
+
+function msSelectAll(e) {
+  if (e) e.stopPropagation();
+  document.querySelectorAll('#msDropdown input[type=checkbox]').forEach(c => c.checked = true);
+  msUpdate();
+}
+
+function msClear(e) {
+  if (e) e.stopPropagation();
+  document.querySelectorAll('#msDropdown input[type=checkbox]').forEach(c => c.checked = false);
+  state.selectedNeighborhoods = [];
+  renderMsTrigger();
+}
+
+// ── STORAGE ────────────────────────────────────────────
+// Chaves padrão (pré-configuradas)
+const DEFAULT_GOOGLE_KEY    = '';
+const DEFAULT_ANTHROPIC_KEY = '';
+
+function loadFromStorage() {
+  try {
+    // Chaves hardcoded sempre têm prioridade; limpa cache inválido
+    if (DEFAULT_GOOGLE_KEY)    { localStorage.setItem(LS_GOOGLE_KEY, DEFAULT_GOOGLE_KEY); }
+    if (DEFAULT_ANTHROPIC_KEY) { localStorage.setItem(LS_ANTHROPIC_KEY, DEFAULT_ANTHROPIC_KEY); }
+    const gk = DEFAULT_GOOGLE_KEY    || localStorage.getItem(LS_GOOGLE_KEY)    || '';
+    const ak = DEFAULT_ANTHROPIC_KEY || localStorage.getItem(LS_ANTHROPIC_KEY) || '';
+    if (gk) { document.getElementById('googleKey').value = gk; state.googleKey = gk; setKeyStatus('google', gk); }
+    if (ak) { document.getElementById('anthropicKey').value = ak; state.anthropicKey = ak; setKeyStatus('anthropic', ak); }
+
+    const saved = localStorage.getItem(LS_RESULTS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        state.results = parsed;
+        renderResults(true);
+        toast(`${parsed.length} resultados restaurados do cache`, 'info');
+      }
+    }
+  } catch(e) { console.warn('Storage error:', e); }
+}
+
+function saveToStorage() {
+  try { localStorage.setItem(LS_RESULTS_KEY, JSON.stringify(state.results)); } catch(e){}
+}
+
+// ── MAIN SEARCH ────────────────────────────────────────
+async function doSearch() {
+  if (!state.googleKey || state.googleKey.length < 20) {
+    toast('Configure uma Google API Key válida', 'error'); return;
+  }
+  if (state.selectedNeighborhoods.length === 0) {
+    toast('Selecione pelo menos um bairro', 'error'); return;
+  }
+
+  const searchType = document.getElementById('searchType').value;
+  const btn = document.getElementById('btnSearch');
+  btn.disabled = true;
+  btn.textContent = '⏳ BUSCANDO...';
+  document.getElementById('resultsToolbar').classList.add('hidden');
+  showLoadingSkeletons();
+
+  try {
+    // Step 1: Text Search per neighborhood
+    let basicResults = [];
+    for (const nbhd of state.selectedNeighborhoods) {
+      const query = `${searchType} ${nbhd} Rio de Janeiro`;
+      const res = await placesTextSearch(query);
+      basicResults.push(...res);
+    }
+
+    // Deduplicate by place_id
+    const seen = new Set();
+    basicResults = basicResults.filter(r => {
+      if (seen.has(r.place_id)) return false;
+      seen.add(r.place_id); return true;
+    });
+
+    if (basicResults.length === 0) {
+      showEmptyState('Nenhum resultado encontrado', 'Tente outros bairros ou tipo de negócio');
+      return;
+    }
+
+    toast(`${basicResults.length} locais encontrados — carregando detalhes...`, 'info');
+
+    // Step 2: Place Details in batches of 5
+    const detailed = [];
+    for (let i = 0; i < basicResults.length; i += 5) {
+      const batch = basicResults.slice(i, i + 5);
+      const settled = await Promise.allSettled(batch.map(b => getPlaceDetails(b.place_id)));
+      for (const s of settled) {
+        if (s.status === 'fulfilled' && s.value) detailed.push(s.value);
+      }
+    }
+
+    // Step 3: Normalize (Places API New field names)
+    state.results = detailed.map(d => ({
+      place_id:               d.id || '',
+      name:                   d.displayName?.text || '',
+      formatted_address:      d.formattedAddress || '',
+      formatted_phone_number: d.nationalPhoneNumber || '',
+      website:                d.websiteUri || '',
+      rating:                 d.rating || 0,
+      user_ratings_total:     d.userRatingCount || 0,
+      opening_hours:          d.currentOpeningHours ? { open_now: d.currentOpeningHours.openNow } : null,
+      url:                    d.googleMapsUri || '',
+      neighborhood:           extractNeighborhood(d.formattedAddress || ''),
+      emails:                 [],
+      emailStatus:            'pending',
+    }));
+
+    saveToStorage();
+    renderResults();
+    toast(`✓ ${state.results.length} empresas carregadas!`, 'success');
+
+  } catch (err) {
+    console.error(err);
+    showEmptyState('Erro ao buscar', err.message);
+    toast(`Erro: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⌕ BUSCAR';
+  }
+}
+
+// ── GOOGLE PLACES API (NEW) ────────────────────────────
+async function placesTextSearch(query) {
+  const apiUrl = `${GOOGLE_NEW}:searchText`;
+  const proxyUrl = CORS_PROXY + encodeURIComponent(apiUrl);
+  const resp = await fetch(proxyUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': state.googleKey,
+      'X-Goog-FieldMask': FIELD_MASK_LIST,
+    },
+    body: JSON.stringify({
+      textQuery: query,
+      languageCode: 'pt-BR',
+      regionCode: 'BR',
+      maxResultCount: 20,
+    })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(`Google API: ${data.error.message || JSON.stringify(data.error)}`);
+  return (data.places || []).map(p => ({ place_id: p.id }));
+}
+
+async function getPlaceDetails(placeId) {
+  const apiUrl = `${GOOGLE_NEW}/${placeId}`;
+  const proxyUrl = CORS_PROXY + encodeURIComponent(apiUrl);
+  const resp = await fetch(proxyUrl, {
+    headers: {
+      'X-Goog-Api-Key': state.googleKey,
+      'X-Goog-FieldMask': FIELD_MASK_DET,
+    }
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(`Google API: ${data.error.message}`);
+  return data;
+}
+
+// ── EMAIL SCRAPING ─────────────────────────────────────
+async function scrapeEmailForBusiness(biz) {
+  if (!biz.website) return;
+  if (!state.anthropicKey) { toast('Configure a Anthropic API Key para usar o scraper', 'error'); return; }
+
+  biz.emailStatus = 'loading';
+  updateCardEmailUI(biz.place_id);
+
+  try {
+    // Fetch website via CORS proxy with timeout
+    const controller = new AbortController();
+    const tId = setTimeout(() => controller.abort(), 10000);
+    let rawHtml = '';
+    try {
+      const proxyUrl = CORS_PROXY + encodeURIComponent(biz.website);
+      const resp = await fetch(proxyUrl, { signal: controller.signal });
+      rawHtml = await resp.text();
+    } finally {
+      clearTimeout(tId);
+    }
+
+    // Strip HTML, collapse whitespace, truncate
+    const text = rawHtml
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 6000);
+
+    // Call Claude API
+    const apiResp = await fetch(ANTHROPIC_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': state.anthropicKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: `Analise este conteúdo de site e extraia todos os emails encontrados.\n\nSite: ${biz.website}\nConteúdo: ${text}\n\nResponda APENAS com JSON: {"emails":["email@exemplo.com"]}\nSe não houver email: {"emails":[]}\nSem texto adicional.`
+        }]
+      })
+    });
+
+    const apiData = await apiResp.json();
+    if (apiData.error) throw new Error(apiData.error.message);
+
+    const raw = apiData.content?.[0]?.text || '{"emails":[]}';
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { emails: [] };
+
+    biz.emails = Array.isArray(parsed.emails)
+      ? parsed.emails.filter(e => typeof e === 'string' && e.includes('@'))
+      : [];
+    biz.emailStatus = biz.emails.length > 0 ? 'found' : 'empty';
+
+  } catch (err) {
+    console.warn('Email scrape failed:', err.message);
+    biz.emailStatus = 'error';
+    biz.emails = [];
+  }
+
+  updateCardEmailUI(biz.place_id);
+  saveToStorage();
+}
+
+// ── BULK SCRAPE ────────────────────────────────────────
+async function scrapeAll() {
+  if (!state.anthropicKey) { toast('Configure a Anthropic API Key primeiro', 'error'); return; }
+  if (state.isScraping) return;
+
+  const candidates = state.results.filter(b => b.website && b.emailStatus !== 'found');
+  if (candidates.length === 0) {
+    toast('Nenhuma empresa com site para verificar', 'info'); return;
+  }
+
+  state.isScraping = true;
+  state.scrapeStop = false;
+  document.getElementById('btnScrapeAll').disabled = true;
+  document.getElementById('scrapeBar').classList.add('visible');
+
+  for (let i = 0; i < candidates.length; i++) {
+    if (state.scrapeStop) break;
+    const biz = candidates[i];
+    document.getElementById('scrapeLabel').textContent = `Analisando: ${biz.name}`;
+    document.getElementById('scrapeCount').textContent = `${i + 1} / ${candidates.length}`;
+    document.getElementById('progressFill').style.width = `${Math.round(((i) / candidates.length) * 100)}%`;
+
+    await scrapeEmailForBusiness(biz);
+
+    if (!state.scrapeStop && i < candidates.length - 1) await sleep(1000);
+  }
+
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('scrapeCount').textContent = `${candidates.length} / ${candidates.length}`;
+  document.getElementById('scrapeLabel').textContent = state.scrapeStop ? '■ Interrompido' : '✓ Concluído!';
+  state.isScraping = false;
+  document.getElementById('btnScrapeAll').disabled = false;
+  setTimeout(() => document.getElementById('scrapeBar').classList.remove('visible'), 3000);
+  toast(`Scrape finalizado — ${candidates.filter(b=>b.emailStatus==='found').length} emails encontrados`, 'success');
+}
+
+function stopScrape() {
+  state.scrapeStop = true;
+  state.isScraping = false;
+  toast('Scrape interrompido', 'info');
+}
+
+// ── RENDER RESULTS ─────────────────────────────────────
+function renderResults(fromCache = false) {
+  const toolbar = document.getElementById('resultsToolbar');
+  const area    = document.getElementById('resultsArea');
+
+  if (!state.results.length) {
+    showEmptyState('Nenhum resultado', ''); toolbar.classList.add('hidden'); return;
+  }
+
+  toolbar.classList.remove('hidden');
+
+  // Repopulate filter select
+  const filterSel = document.getElementById('neighborhoodFilter');
+  const prevFilter = filterSel.value;
+  const nbhds = [...new Set(state.results.map(b => b.neighborhood).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt'));
+  filterSel.innerHTML = '<option value="">Todos os bairros</option>' +
+    nbhds.map(n => `<option value="${escAttr(n)}"${prevFilter===n?' selected':''}>${esc(n)}</option>`).join('');
+  if (prevFilter) filterSel.value = prevFilter;
+
+  const filtered = state.filterNeighborhood
+    ? state.results.filter(b => b.neighborhood === state.filterNeighborhood)
+    : state.results;
+
+  document.getElementById('totalCount').textContent = filtered.length;
+  document.getElementById('totalNeighborhoods').textContent =
+    new Set(filtered.map(b => b.neighborhood).filter(Boolean)).size;
+
+  // Group by neighborhood
+  const groups = {};
+  for (const biz of filtered) {
+    const key = biz.neighborhood || 'Outros';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(biz);
+  }
+
+  let html = '';
+  let globalIdx = 0;
+  for (const [nbhd, bizList] of Object.entries(groups)) {
+    html += `
+      <div class="neighborhood-group">
+        <div class="group-header">
+          <span class="group-name">${esc(nbhd.toUpperCase())}</span>
+          <span class="group-count">${bizList.length} empresa${bizList.length !== 1 ? 's' : ''}</span>
+          <div class="group-divider"></div>
+        </div>
+        <div class="cards-grid">
+          ${bizList.map((b, i) => renderCard(b, globalIdx + i)).join('')}
+        </div>
+      </div>`;
+    globalIdx += bizList.length;
+  }
+
+  area.innerHTML = html;
+}
+
+function renderCard(biz, idx) {
+  const delay = Math.min(idx * 35, 500);
+
+  // Open/closed badge
+  let statusBadge = '<span class="badge badge-unk">—</span>';
+  if (biz.opening_hours) {
+    statusBadge = biz.opening_hours.open_now
+      ? '<span class="badge badge-open">ABERTO</span>'
+      : '<span class="badge badge-closed">FECHADO</span>';
+  }
+
+  // Rating stars
+  let ratingHtml = '';
+  if (biz.rating) {
+    ratingHtml = `
+      <div class="rating-row">
+        <span class="stars">${renderStars(biz.rating)}</span>
+        <span class="rating-val">${biz.rating.toFixed(1)}</span>
+        <span class="rating-cnt">(${(biz.user_ratings_total||0).toLocaleString('pt-BR')})</span>
+      </div>`;
+  }
+
+  const addrHtml  = biz.formatted_address ? `<div class="meta-row"><span class="meta-icon">📍</span><span class="meta-text">${esc(biz.formatted_address)}</span></div>` : '';
+  const phoneHtml = biz.formatted_phone_number ? `<div class="meta-row"><span class="meta-icon">📞</span><a class="meta-text" href="tel:${escAttr(biz.formatted_phone_number)}">${esc(biz.formatted_phone_number)}</a></div>` : '';
+  const siteHtml  = biz.website ? `<div class="meta-row"><span class="meta-icon">🌐</span><a class="meta-link" href="${escAttr(biz.website)}" target="_blank" rel="noopener noreferrer">${esc(shortUrl(biz.website))}</a></div>` : '';
+  const mapsHtml  = biz.url ? `<div class="meta-row"><span class="meta-icon">🗺</span><a class="meta-link" href="${escAttr(biz.url)}" target="_blank" rel="noopener noreferrer">Ver no Google Maps ↗</a></div>` : '';
+
+  const cardClass = biz.emailStatus === 'found' ? 'card email-found'
+                  : biz.emailStatus === 'empty' ? 'card email-empty'
+                  : 'card';
+
+  return `
+    <div class="${cardClass}" id="card_${escAttr(biz.place_id)}" style="animation-delay:${delay}ms">
+      <div class="card-header">
+        <div class="card-name">${esc(biz.name)}</div>
+        ${statusBadge}
+      </div>
+      ${ratingHtml}
+      <div class="card-meta">${addrHtml}${phoneHtml}${siteHtml}${mapsHtml}</div>
+      <div class="card-footer" id="footer_${escAttr(biz.place_id)}">${renderEmailFooter(biz)}</div>
+    </div>`;
+}
+
+function renderEmailFooter(biz) {
+  if (!biz.website) return `<span class="no-site-note">— sem site cadastrado</span>`;
+
+  if (biz.emailStatus === 'loading') {
+    return `<div class="scraping-note"><div class="spinner"></div> Analisando site com IA...</div>`;
+  }
+
+  const indicators = {
+    found:   '<span class="email-indicator ind-found">✓ EMAIL ENCONTRADO</span>',
+    empty:   '<span class="email-indicator ind-empty">✗ SEM EMAIL</span>',
+    error:   '<span class="email-indicator ind-empty">✗ ERRO NO SCRAPE</span>',
+    pending: '<span class="email-indicator ind-pending">— NÃO VERIFICADO</span>',
+  };
+  const indicator = indicators[biz.emailStatus] || indicators.pending;
+  const btn = `<button class="btn btn-blue btn-xs" onclick="triggerCardScrape('${escAttr(biz.place_id)}')">✉ BUSCAR EMAIL</button>`;
+
+  const emailTags = biz.emails.length > 0
+    ? `<div class="email-tags">${biz.emails.map(e => `<a class="email-tag" href="mailto:${escAttr(e)}">✉ ${esc(e)}</a>`).join('')}</div>`
+    : '';
+
+  return `<div class="email-actions">${btn}${indicator}</div>${emailTags}`;
+}
+
+function updateCardEmailUI(placeId) {
+  const footer = document.getElementById(`footer_${placeId}`);
+  const card   = document.getElementById(`card_${placeId}`);
+  const biz    = state.results.find(b => b.place_id === placeId);
+  if (!footer || !biz) return;
+  footer.innerHTML = renderEmailFooter(biz);
+  if (card) {
+    card.className = biz.emailStatus === 'found' ? 'card email-found'
+                   : biz.emailStatus === 'empty' ? 'card email-empty'
+                   : 'card';
+  }
+}
+
+async function triggerCardScrape(placeId) {
+  const biz = state.results.find(b => b.place_id === placeId);
+  if (biz) await scrapeEmailForBusiness(biz);
+}
+
+// ── FILTER ─────────────────────────────────────────────
+function applyFilter() {
+  state.filterNeighborhood = document.getElementById('neighborhoodFilter').value;
+  renderResults();
+}
+
+// ── LOADING / EMPTY STATES ─────────────────────────────
+function showLoadingSkeletons() {
+  const area = document.getElementById('resultsArea');
+  area.innerHTML = `<div class="loading-grid">${Array(8).fill('<div class="skeleton"></div>').join('')}</div>`;
+}
+
+function showEmptyState(title, sub) {
+  document.getElementById('resultsArea').innerHTML = `
+    <div class="state-box">
+      <div class="state-icon">🔍</div>
+      <div class="state-title">${esc(title)}</div>
+      <div class="state-sub">${esc(sub)}</div>
+    </div>`;
+}
+
+// ── EXPORT CSV ─────────────────────────────────────────
+function exportCSV() {
+  const data = state.filterNeighborhood
+    ? state.results.filter(b => b.neighborhood === state.filterNeighborhood)
+    : state.results;
+  if (!data.length) { toast('Nenhum dado para exportar', 'error'); return; }
+
+  const cols = ['Nome','Bairro','Endereço','Telefone','Website','Emails','Avaliação','Total Avaliações','Google Maps'];
+  const rows = data.map(b => [
+    b.name,
+    b.neighborhood,
+    b.formatted_address,
+    b.formatted_phone_number,
+    b.website,
+    b.emails.join(';'),
+    b.rating ? b.rating.toFixed(1) : '',
+    b.user_ratings_total || '',
+    b.url,
+  ].map(csvCell));
+
+  const csv = [cols.map(csvCell).join(','), ...rows.map(r => r.join(','))].join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `auto-pecas-rj-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`CSV exportado — ${data.length} registros`, 'success');
+}
+
+function csvCell(v) {
+  const s = String(v ?? '');
+  return (s.includes(',') || s.includes('"') || s.includes('\n'))
+    ? '"' + s.replace(/"/g,'""') + '"'
+    : s;
+}
+
+// ── HELPERS ────────────────────────────────────────────
+function extractNeighborhood(address) {
+  if (!address) return 'Outros';
+  for (const n of ALL_NEIGHBORHOODS) {
+    if (address.includes(n)) return n;
+  }
+  // Fallback: "Rua X, 123 - Bairro, Cidade"
+  const dash = address.split(' - ');
+  if (dash.length >= 2) {
+    const candidate = dash[1].split(',')[0].trim();
+    if (candidate && candidate.length > 1 && candidate.length < 50) return candidate;
+  }
+  return 'Outros';
+}
+
+function renderStars(rating) {
+  if (!rating) return '';
+  const full = Math.floor(rating);
+  const half = (rating % 1) >= 0.4 ? 1 : 0;
+  const empty = 5 - full - half;
+  return '★'.repeat(full) + (half ? '⯨' : '') + '☆'.repeat(empty);
+}
+
+function shortUrl(url) {
+  try { return new URL(url).hostname.replace(/^www\./,''); }
+  catch(e) { return url.slice(0, 40); }
+}
+
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function escAttr(s) {
+  return String(s ?? '').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── TOAST ──────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 3000);
+  setTimeout(() => el.remove(), 3400);
+}
+</script>
+</body>
+</html>
