@@ -801,8 +801,7 @@ async function doSearch() {
 // ── GOOGLE PLACES API (NEW) ────────────────────────────
 async function placesTextSearch(query) {
   const apiUrl = `${GOOGLE_NEW}:searchText`;
-  const proxyUrl = CORS_PROXY + encodeURIComponent(apiUrl);
-  const resp = await fetch(proxyUrl, {
+  const resp = await fetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -823,8 +822,7 @@ async function placesTextSearch(query) {
 
 async function getPlaceDetails(placeId) {
   const apiUrl = `${GOOGLE_NEW}/${placeId}`;
-  const proxyUrl = CORS_PROXY + encodeURIComponent(apiUrl);
-  const resp = await fetch(proxyUrl, {
+  const resp = await fetch(apiUrl, {
     headers: {
       'X-Goog-Api-Key': state.googleKey,
       'X-Goog-FieldMask': FIELD_MASK_DET,
