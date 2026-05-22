@@ -1,0 +1,155 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── DESIGN TOKENS (cyber/dark · amarelo neon) ─────────── */
+@theme {
+  /* Cores base do sistema (preservadas do HTML original) */
+  --color-bg: #0a0a0f;
+  --color-surface: #16161f;
+  --color-surface-2: #1e1e2a;
+  --color-border-base: #252530;
+  --color-border-strong: #32323f;
+
+  /* Acentos */
+  --color-accent: #e8ff47;
+  --color-orange: #ff6b35;
+  --color-blue: #60a5fa;
+  --color-green: #4ade80;
+  --color-red: #f87171;
+  --color-yellow: #fbbf24;
+
+  /* Tipografia */
+  --color-text: #e8e8f0;
+  --color-text-dim: #8888a0;
+  --color-text-mute: #55556a;
+
+  /* Fontes */
+  --font-display: "Bebas Neue", sans-serif;
+  --font-sans: "DM Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Raios */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+
+  /* Sombras coloridas */
+  --shadow-glow-accent: 0 0 40px rgba(232, 255, 71, 0.3);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+
+  /* Tokens shadcn (mapeados pros nossos) */
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-text);
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: #000000;
+  --color-secondary: var(--color-surface-2);
+  --color-secondary-foreground: var(--color-text);
+  --color-muted: var(--color-surface);
+  --color-muted-foreground: var(--color-text-dim);
+  --color-accent-foreground: #000000;
+  --color-destructive: var(--color-red);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--color-border-base);
+  --color-input: var(--color-border-strong);
+  --color-ring: var(--color-accent);
+}
+
+/* ── RESET / BASE ──────────────────────────────────────── */
+@layer base {
+  * {
+    border-color: var(--color-border-base);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      linear-gradient(rgba(232, 255, 71, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232, 255, 71, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Scrollbar custom */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-mute);
+  }
+}
+
+/* ── UTILS ─────────────────────────────────────────────── */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+  .glow-accent {
+    text-shadow: var(--shadow-glow-accent);
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(232, 255, 71, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232, 255, 71, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
+
+/* ── ANIMATIONS ────────────────────────────────────────── */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position: -600px 0;
+  }
+  100% {
+    background-position: 600px 0;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.35s ease both;
+}
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    var(--color-surface-2) 50%,
+    var(--color-surface) 100%
+  );
+  background-size: 1200px 100%;
+  animation: shimmer 1.5s infinite;
+}
