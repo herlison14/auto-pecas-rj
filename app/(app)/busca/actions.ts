@@ -5,7 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { getDb, schema } from '@/lib/db';
-import { batchSearchOSM } from '@/lib/openstreetmap';
+import { batchSearchOSM, nominatimGeocode } from '@/lib/openstreetmap';
+import { batchSearchGooglePlaces } from '@/lib/google-places';
 import { extractEmailsFromSite } from '@/lib/claude';
 
 const BuscaSchema = z.object({
@@ -75,48 +76,68 @@ export async function executarBusca(input: z.infer<typeof BuscaSchema>) {
   if (bairros.length === 0)
     return { ok: false as const, erro: 'Bairros inválidos' };
 
-  // ───── Busca OSM ─────
-  let osmResults: Awaited<ReturnType<typeof batchSearchOSM>>;
-  try {
-    osmResults = await batchSearchOSM(
-      setor.osmFilter,
-      bairros.map((b) => ({ id: b.id, nome: b.nome })),
-      cidade.nome,
-      cidade.estado,
-      { radiusMeters: 1500, maxPerBairro: 30 },
-    );
-  } catch (err) {
-    return {
-      ok: false as const,
-      erro:
-        err instanceof Error
-          ? `OpenStreetMap: ${err.message}`
-          : 'Erro ao consultar OpenStreetMap',
-    };
-  }
+  // ───── Busca: Google Places (quando disponível) ou OSM ─────
+  const useGoogle = !!process.env.GOOGLE_PLACES_API_KEY;
 
-  if (osmResults.length === 0) {
-    // Registra busca vazia no histórico mesmo assim
-    await db.insert(schema.buscas).values({
-      ownerId: userId,
-      setorId: setor.id,
-      cidadeId: cidade.id,
-      bairrosIds: bairros.map((b) => b.id),
-      totalResultados: 0,
-    });
-    return {
-      ok: true as const,
-      resultados: [],
-      totalEncontrado: 0,
-    };
-  }
+  type PlaceRow = {
+    ownerId: string;
+    placeId: string;
+    nome: string;
+    setorId: string;
+    cidadeId: string;
+    bairroId: string;
+    endereco: string;
+    telefone: string | null;
+    website: string | null;
+    rating: string | null;
+    userRatingsTotal: number | null;
+    googleMapsUrl: string | null;
+    abertoAgora: boolean | null;
+    emails: string[];
+  };
 
-  // ───── Upsert no banco ─────
-  const rows = osmResults.map((r) => {
-    const googleMapsUrl = `https://www.google.com/maps?q=${r.lat},${r.lon}`;
-    return {
+  let rows: PlaceRow[];
+
+  if (useGoogle) {
+    // Geocoda a primeira cidade (centroide) para usar como âncora de proximidade
+    const coords = await nominatimGeocode(bairros[0].nome, cidade.nome, cidade.estado);
+    const lat = coords?.lat ?? -22.9068;
+    const lon = coords?.lon ?? -43.1729;
+
+    let googleResults: Awaited<ReturnType<typeof batchSearchGooglePlaces>>;
+    try {
+      googleResults = await batchSearchGooglePlaces(
+        setor.queryTemplate,
+        lat,
+        lon,
+        bairros.map((b) => ({ id: b.id, nome: b.nome })),
+        cidade.nome,
+        { radiusMeters: 1500, maxPerBairro: 20 },
+      );
+    } catch (err) {
+      return {
+        ok: false as const,
+        erro:
+          err instanceof Error
+            ? `Google Places: ${err.message}`
+            : 'Erro ao consultar Google Places',
+      };
+    }
+
+    if (googleResults.length === 0) {
+      await db.insert(schema.buscas).values({
+        ownerId: userId,
+        setorId: setor.id,
+        cidadeId: cidade.id,
+        bairrosIds: bairros.map((b) => b.id),
+        totalResultados: 0,
+      });
+      return { ok: true as const, resultados: [], totalEncontrado: 0 };
+    }
+
+    rows = googleResults.map((r) => ({
       ownerId: userId,
-      placeId: r.osmId, // reaproveita placeId pro osmId — chave única ainda funciona
+      placeId: r.placeId,
       nome: r.nome,
       setorId: setor.id,
       cidadeId: cidade.id,
@@ -124,13 +145,61 @@ export async function executarBusca(input: z.infer<typeof BuscaSchema>) {
       endereco: r.endereco || `${r.bairroNome}, ${cidade.nome}`,
       telefone: r.telefone,
       website: r.website,
-      rating: null, // OSM não tem rating
+      rating: r.rating != null ? String(r.rating) : null,
+      userRatingsTotal: r.totalReviews,
+      googleMapsUrl: r.googleMapsUrl,
+      abertoAgora: r.abertoAgora,
+      emails: [],
+    }));
+  } else {
+    // Fallback: OpenStreetMap
+    let osmResults: Awaited<ReturnType<typeof batchSearchOSM>>;
+    try {
+      osmResults = await batchSearchOSM(
+        setor.osmFilter,
+        bairros.map((b) => ({ id: b.id, nome: b.nome })),
+        cidade.nome,
+        cidade.estado,
+        { radiusMeters: 1500, maxPerBairro: 30 },
+      );
+    } catch (err) {
+      return {
+        ok: false as const,
+        erro:
+          err instanceof Error
+            ? `OpenStreetMap: ${err.message}`
+            : 'Erro ao consultar OpenStreetMap',
+      };
+    }
+
+    if (osmResults.length === 0) {
+      await db.insert(schema.buscas).values({
+        ownerId: userId,
+        setorId: setor.id,
+        cidadeId: cidade.id,
+        bairrosIds: bairros.map((b) => b.id),
+        totalResultados: 0,
+      });
+      return { ok: true as const, resultados: [], totalEncontrado: 0 };
+    }
+
+    rows = osmResults.map((r) => ({
+      ownerId: userId,
+      placeId: r.osmId,
+      nome: r.nome,
+      setorId: setor.id,
+      cidadeId: cidade.id,
+      bairroId: r.bairroId,
+      endereco: r.endereco || `${r.bairroNome}, ${cidade.nome}`,
+      telefone: r.telefone,
+      website: r.website,
+      rating: null,
       userRatingsTotal: null,
-      googleMapsUrl,
+      googleMapsUrl: `https://www.google.com/maps?q=${r.lat},${r.lon}`,
       abertoAgora: null,
       emails: r.email ? [r.email] : [],
-    };
-  });
+    }));
+  }
 
   const empresasInseridas = await db
     .insert(schema.empresas)
