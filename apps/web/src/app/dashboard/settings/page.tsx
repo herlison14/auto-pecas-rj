@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle, AlertTriangle, ShieldCheck, ShieldOff, Mail, Send } from 'lucide-react'
@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 const TABS = ['Empresa', 'Fiscal (NF-e)', 'Armazéns', 'Equipe', 'Segurança', 'E-mail', 'Plano'] as const
 type Tab = typeof TABS[number]
 
-export default function SettingsPage() {
+function SettingsContent() {
   const [tab, setTab] = useState<Tab>('Empresa')
   const params = useSearchParams()
   const upgradeStatus = params.get('upgrade')
@@ -51,6 +51,14 @@ export default function SettingsPage() {
       {tab === 'E-mail' && <EmailTab />}
       {tab === 'Plano' && <PlanTab />}
     </div>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense>
+      <SettingsContent />
+    </Suspense>
   )
 }
 
