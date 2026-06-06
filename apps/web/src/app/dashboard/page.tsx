@@ -151,11 +151,11 @@ export default function DashboardPage() {
           <p className="text-sm text-muted-foreground mt-0.5">Visão geral do seu negócio</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 rounded-lg border bg-muted/40 p-1">
+          <div className="flex gap-1 rounded-lg border bg-muted/60 p-1">
             {PERIODS.map((p) => (
               <button key={p.days} onClick={() => setDays(p.days)}
                 className={cn('rounded-md px-3 py-1 text-xs font-semibold transition-all',
-                  days === p.days ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+                  days === p.days ? 'bg-card shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
                 {p.label}
               </button>
             ))}
@@ -172,26 +172,26 @@ export default function DashboardPage() {
           title="Receita do período" loading={loadingOverview}
           value={fmtCurrency(overview?.totalRevenue ?? 0)}
           sub={`${overview?.totalOrders ?? 0} pedidos confirmados`}
-          icon={DollarSign} trend={0} colorClass="bg-blue-50 text-blue-600"
+          icon={DollarSign} trend={0} colorClass="bg-blue-500/15 text-blue-400"
         />
         <StatCard
           title="Ticket médio" loading={loadingOverview}
           value={fmtCurrency(overview?.averageTicket ?? 0)}
           sub="Por pedido no período"
-          icon={BarChart3} colorClass="bg-violet-50 text-violet-600"
+          icon={BarChart3} colorClass="bg-violet-500/15 text-violet-400"
         />
         <StatCard
           title="Pedidos pendentes"
           value={String(extras?.pendingOrders ?? 0)}
           sub="Aguardando processamento"
-          icon={ShoppingCart} colorClass="bg-amber-50 text-amber-600"
+          icon={ShoppingCart} colorClass="bg-amber-500/15 text-amber-400"
         />
         <StatCard
           title="Estoque crítico"
           value={String(extras?.lowStockCount ?? 0)}
           sub="Produtos abaixo do mínimo"
           icon={AlertTriangle}
-          colorClass={extras?.lowStockCount ? 'bg-red-50 text-red-500' : 'bg-muted text-muted-foreground'}
+          colorClass={extras?.lowStockCount ? 'bg-red-500/15 text-red-400' : 'bg-muted text-muted-foreground'}
         />
       </div>
 
@@ -352,10 +352,10 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               {[
-                { href: '/dashboard/orders',       label: 'Pedidos pendentes',  desc: `${extras?.pendingOrders ?? 0} aguardando`, color: 'hover:bg-amber-50/60' },
-                { href: '/dashboard/inventory',    label: 'Estoque baixo',      desc: `${extras?.lowStockCount ?? 0} produtos`, color: 'hover:bg-red-50/60' },
-                { href: '/dashboard/integrations', label: 'Canais ativos',      desc: `${extras?.connectedStores ?? 0} conectados`, color: 'hover:bg-blue-50/60' },
-                { href: '/dashboard/catalog',      label: 'Sync catálogo',      desc: 'Verificar divergências', color: 'hover:bg-purple-50/60' },
+                { href: '/dashboard/orders',       label: 'Pedidos pendentes',  desc: `${extras?.pendingOrders ?? 0} aguardando`, color: 'hover:bg-amber-500/10' },
+                { href: '/dashboard/inventory',    label: 'Estoque baixo',      desc: `${extras?.lowStockCount ?? 0} produtos`, color: 'hover:bg-red-500/10' },
+                { href: '/dashboard/integrations', label: 'Canais ativos',      desc: `${extras?.connectedStores ?? 0} conectados`, color: 'hover:bg-blue-500/10' },
+                { href: '/dashboard/catalog',      label: 'Sync catálogo',      desc: 'Verificar divergências', color: 'hover:bg-violet-500/10' },
               ].map(({ href, label, desc, color }) => (
                 <Link key={href} href={href}
                   className={cn('flex items-center justify-between px-4 py-3 border-b last:border-0 transition-colors', color)}>

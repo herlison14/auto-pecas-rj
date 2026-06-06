@@ -2,6 +2,17 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { api } from './api'
 
+const COOKIE_NAME = 'sellsync:token'
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 7 // 7 days
+
+export function setAuthCookie(token: string) {
+  document.cookie = `${COOKIE_NAME}=${token}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`
+}
+
+export function clearAuthCookie() {
+  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`
+}
+
 interface User {
   id: string
   name: string
@@ -39,6 +50,7 @@ export const useAuth = create<AuthState>()(
         const { data } = await api.post('/auth/login', { email, password })
         if (data.requires2fa) return { requires2fa: true, tempToken: data.tempToken }
         localStorage.setItem('sellsync:token', data.token)
+        setAuthCookie(data.token)
         set({ token: data.token, user: data.user, tenant: data.tenant, isAuthenticated: true })
         return {}
       },
@@ -46,11 +58,13 @@ export const useAuth = create<AuthState>()(
       register: async (tenantName, name, email, password) => {
         const { data } = await api.post('/auth/register', { tenantName, name, email, password })
         localStorage.setItem('sellsync:token', data.token)
+        setAuthCookie(data.token)
         set({ token: data.token, user: data.user, tenant: data.tenant, isAuthenticated: true })
       },
 
       logout: () => {
         localStorage.removeItem('sellsync:token')
+        clearAuthCookie()
         set({ token: null, user: null, tenant: null, isAuthenticated: false })
       },
 
@@ -65,6 +79,12 @@ export const useAuth = create<AuthState>()(
         }
       },
     }),
-    { name: 'sellsync:auth', partialize: (s) => ({ token: s.token, user: s.user, tenant: s.tenant }) },
+    {
+      name: 'sellsync:auth',
+      partialize: (s) => ({ token: s.token, user: s.user, tenant: s.tenant }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.token) setAuthCookie(state.token)
+      },
+    },
   ),
 )
