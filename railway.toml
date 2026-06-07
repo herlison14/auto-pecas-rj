@@ -1,0 +1,10 @@
+[build]
+dockerfilePath = "apps/api/Dockerfile"
+watchPatterns = ["apps/api/**", "packages/**"]
+
+[deploy]
+startCommand = "./apps/api/docker-entrypoint.sh"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 60
+restartPolicyType = "on-failure"
+restartPolicyMaxRetries = 3
