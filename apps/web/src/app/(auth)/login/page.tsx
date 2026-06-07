@@ -3,19 +3,17 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Zap, Eye, EyeOff, AlertCircle, ShieldCheck, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, ShieldCheck, ArrowRight, Zap } from 'lucide-react'
 import { useAuth, setAuthCookie } from '@/lib/auth'
 import { api } from '@/lib/api'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [showPwd, setShowPwd] = useState(false)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [showPwd, setShowPwd]   = useState(false)
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
   const [tempToken, setTempToken] = useState('')
   const [totpCode, setTotpCode] = useState('')
   const { login } = useAuth()
@@ -55,161 +53,270 @@ export default function LoginPage() {
     }
   }
 
+  /* ── 2FA screen ──────────────────────────────────────────────────────────── */
   if (tempToken) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="w-full max-w-sm space-y-6 animate-fade-in-scale">
-          <div className="text-center space-y-3">
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl mx-auto"
-              style={{ background: 'linear-gradient(135deg, hsl(var(--gradient-start) / 0.2), hsl(var(--gradient-end) / 0.2))', border: '1px solid hsl(var(--primary) / 0.3)' }}
-            >
-              <ShieldCheck className="h-7 w-7" style={{ color: 'hsl(var(--primary))' }} />
+      <Page>
+        <Card>
+          <div className="flex flex-col items-center gap-3 mb-8">
+            <div style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)' }}
+              className="flex h-14 w-14 items-center justify-center rounded-2xl">
+              <ShieldCheck className="h-7 w-7" style={{ color: '#818cf8' }} />
             </div>
-            <h1 className="text-xl font-bold">Autenticação em 2 fatores</h1>
-            <p className="text-sm text-muted-foreground">Digite o código de 6 dígitos do seu autenticador</p>
+            <div className="text-center">
+              <h1 className="text-xl font-semibold text-white">Verificação em 2 etapas</h1>
+              <p className="text-sm mt-1" style={{ color: '#94a3b8' }}>
+                Digite o código de 6 dígitos do seu autenticador
+              </p>
+            </div>
           </div>
-          {error && (
-            <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4 shrink-0" /> {error}
-            </div>
-          )}
+
+          {error && <ErrorBox message={error} />}
+
           <form onSubmit={handleVerify2fa} className="space-y-4">
-            <Input
-              value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="000000" className="text-center text-2xl tracking-[0.5em] font-mono h-14"
-              maxLength={6} autoFocus inputMode="numeric"
+            <input
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000 000"
+              maxLength={6}
+              autoFocus
+              inputMode="numeric"
+              className="w-full text-center text-2xl tracking-[0.4em] font-mono h-14 rounded-xl px-4 outline-none transition-all"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#f1f5f9',
+              }}
+              onFocus={(e) => { e.target.style.border = '1px solid rgba(99,102,241,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)' }}
+              onBlur={(e) => { e.target.style.border = '1px solid rgba(255,255,255,0.1)'; e.target.style.boxShadow = 'none' }}
             />
-            <Button type="submit" className="w-full" disabled={totpCode.length !== 6 || loading}>
-              {loading ? 'Verificando...' : 'Verificar'}
-            </Button>
+            <PrimaryButton disabled={totpCode.length !== 6 || loading}>
+              {loading ? 'Verificando...' : 'Verificar código'}
+            </PrimaryButton>
           </form>
-          <button onClick={() => setTempToken('')} className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+
+          <button
+            onClick={() => setTempToken('')}
+            className="w-full text-center text-sm mt-4 transition-colors"
+            style={{ color: '#64748b' }}
+            onMouseEnter={(e) => { (e.target as HTMLElement).style.color = '#94a3b8' }}
+            onMouseLeave={(e) => { (e.target as HTMLElement).style.color = '#64748b' }}
+          >
             ← Voltar ao login
           </button>
-        </div>
-      </div>
+        </Card>
+      </Page>
     )
   }
 
+  /* ── Login screen ────────────────────────────────────────────────────────── */
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Left panel — gradient branding */}
-      <div
-        className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center p-12 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, hsl(239 60% 12%), hsl(270 60% 10%))' }}
-      >
-        {/* Background glow */}
-        <div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'hsl(var(--primary))' }}
-        />
-        <div
-          className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-3xl opacity-10"
-          style={{ background: 'hsl(var(--gradient-end))' }}
-        />
-
-        <div className="relative z-10 max-w-sm space-y-8">
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary shadow-2xl">
-              <Zap className="h-6 w-6 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="text-2xl font-bold tracking-tight text-white">SellSync</span>
+    <Page>
+      <Card>
+        {/* Logo */}
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-2xl"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 0 24px rgba(99,102,241,0.4)' }}
+          >
+            <Zap className="h-6 w-6 text-white" strokeWidth={2.5} />
           </div>
-
-          <div className="space-y-3">
-            <h2 className="text-3xl font-bold leading-tight text-white">
-              Gerencie todos os seus marketplaces em um só lugar
-            </h2>
-            <p className="text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
-              ML, Shopee, Amazon, Magalu e muito mais. Estoque, pedidos e NF-e centralizados.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { n: '7+', label: 'Marketplaces' },
-              { n: '100%', label: 'Automatizado' },
-              { n: 'NF-e', label: 'Integrado' },
-              { n: 'Real-time', label: 'Sincronização' },
-            ].map(({ n, label }) => (
-              <div
-                key={n}
-                className="rounded-xl p-3"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                <p className="text-lg font-bold text-white">{n}</p>
-                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</p>
-              </div>
-            ))}
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-white tracking-tight">Bem-vindo de volta</h1>
+            <p className="text-sm mt-1" style={{ color: '#64748b' }}>Entre na sua conta SellSync</p>
           </div>
         </div>
-      </div>
 
-      {/* Right panel — form */}
-      <div className="flex flex-1 items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm space-y-7 animate-fade-in">
-          {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 lg:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl gradient-primary">
-              <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-bold text-foreground">SellSync</span>
-          </div>
+        {error && <ErrorBox message={error} />}
 
-          <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight">Bem-vindo de volta</h1>
-            <p className="text-sm text-muted-foreground">Entre com sua conta para continuar</p>
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="E-mail">
+            <TextInput
+              type="email"
+              value={email}
+              onChange={(v) => setEmail(v)}
+              placeholder="seu@email.com"
+              autoFocus
+              required
+            />
+          </Field>
 
-          {error && (
-            <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground/80">E-mail</label>
-              <Input
-                type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                required autoFocus placeholder="seu@email.com"
+          <Field label="Senha">
+            <div className="relative">
+              <TextInput
+                type={showPwd ? 'text' : 'password'}
+                value={password}
+                onChange={(v) => setPassword(v)}
+                placeholder="••••••••"
+                required
+                className="pr-10"
               />
+              <button
+                type="button"
+                onClick={() => setShowPwd(!showPwd)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                style={{ color: '#475569' }}
+                onMouseEnter={(e) => { (e.target as HTMLElement).style.color = '#94a3b8' }}
+                onMouseLeave={(e) => { (e.target as HTMLElement).style.color = '#475569' }}
+              >
+                {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground/80">Senha</label>
-              <div className="relative">
-                <Input
-                  type={showPwd ? 'text' : 'password'} value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required placeholder="••••••••" className="pr-10"
-                />
-                <button type="button" onClick={() => setShowPwd(!showPwd)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-            <Button
-              type="submit"
-              className={cn('w-full gap-2', loading && 'opacity-80')}
-              disabled={loading}
-            >
-              {loading ? 'Entrando...' : (
-                <>Entrar <ArrowRight className="h-4 w-4" /></>
-              )}
-            </Button>
-          </form>
+          </Field>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Não tem conta?{' '}
-            <Link href="/register" className="font-semibold hover:underline" style={{ color: 'hsl(var(--primary))' }}>
-              Criar conta grátis
-            </Link>
-          </p>
-        </div>
-      </div>
+          <PrimaryButton disabled={loading} className="mt-2">
+            {loading
+              ? <span className="flex items-center gap-2 justify-center"><Spinner />Entrando...</span>
+              : <span className="flex items-center gap-2 justify-center">Entrar <ArrowRight className="h-4 w-4" /></span>
+            }
+          </PrimaryButton>
+        </form>
+
+        <Divider />
+
+        <p className="text-center text-sm" style={{ color: '#475569' }}>
+          Não tem conta?{' '}
+          <Link href="/register" className="font-semibold transition-colors" style={{ color: '#818cf8' }}
+            onMouseEnter={(e) => { (e.target as HTMLElement).style.color = '#a5b4fc' }}
+            onMouseLeave={(e) => { (e.target as HTMLElement).style.color = '#818cf8' }}
+          >
+            Criar conta grátis
+          </Link>
+        </p>
+      </Card>
+
+      {/* Footer branding */}
+      <p className="mt-6 text-center text-xs" style={{ color: '#1e293b' }}>
+        ML · Shopee · Amazon · Magalu · Americanas
+      </p>
+    </Page>
+  )
+}
+
+/* ── Shared sub-components ──────────────────────────────────────────────────── */
+
+function Page({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+      style={{
+        background: '#080810',
+        backgroundImage: `
+          radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99,102,241,0.15) 0%, transparent 60%),
+          radial-gradient(ellipse 40% 30% at 80% 80%, rgba(139,92,246,0.08) 0%, transparent 50%)
+        `,
+      }}
+    >
+      {children}
     </div>
+  )
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="w-full max-w-sm rounded-2xl p-8 animate-fade-in"
+      style={{
+        background: 'rgba(15, 15, 25, 0.9)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        boxShadow: '0 25px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset',
+        backdropFilter: 'blur(20px)',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium uppercase tracking-widest" style={{ color: '#475569' }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+function TextInput({ type, value, onChange, placeholder, autoFocus, required, className }: {
+  type: string; value: string; onChange: (v: string) => void
+  placeholder?: string; autoFocus?: boolean; required?: boolean; className?: string
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      autoFocus={autoFocus}
+      required={required}
+      className={cn('w-full h-11 rounded-xl px-3.5 text-sm outline-none transition-all', className)}
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        color: '#f1f5f9',
+      }}
+      onFocus={(e) => {
+        e.target.style.border = '1px solid rgba(99,102,241,0.5)'
+        e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.12)'
+        e.target.style.background = 'rgba(255,255,255,0.06)'
+      }}
+      onBlur={(e) => {
+        e.target.style.border = '1px solid rgba(255,255,255,0.08)'
+        e.target.style.boxShadow = 'none'
+        e.target.style.background = 'rgba(255,255,255,0.04)'
+      }}
+    />
+  )
+}
+
+function PrimaryButton({ children, disabled, className }: {
+  children: React.ReactNode; disabled?: boolean; className?: string
+}) {
+  return (
+    <button
+      type="submit"
+      disabled={disabled}
+      className={cn('w-full h-11 rounded-xl text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed', className)}
+      style={{
+        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+        boxShadow: '0 0 20px rgba(99,102,241,0.3)',
+      }}
+      onMouseEnter={(e) => { if (!disabled) (e.currentTarget as HTMLElement).style.opacity = '0.9' }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1' }}
+    >
+      {children}
+    </button>
+  )
+}
+
+function ErrorBox({ message }: { message: string }) {
+  return (
+    <div
+      className="flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm mb-4"
+      style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}
+    >
+      <AlertCircle className="h-4 w-4 shrink-0" /> {message}
+    </div>
+  )
+}
+
+function Divider() {
+  return (
+    <div className="flex items-center gap-3 my-5">
+      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+      <span className="text-xs" style={{ color: '#1e293b' }}>ou</span>
+      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+    </div>
+  )
+}
+
+function Spinner() {
+  return (
+    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
   )
 }

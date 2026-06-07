@@ -13,12 +13,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="flex flex-1 flex-col overflow-hidden">
           <header
             className="flex h-12 shrink-0 items-center justify-end px-4 gap-2"
-            style={{ borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--card))' }}
+            style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0f0f1a' }}
           >
             <NotificationBell />
           </header>
           <OnboardingBanner />
-          <main className="flex-1 overflow-y-auto bg-background">
+          <main className="flex-1 overflow-y-auto" style={{ background: '#080810' }}>
             <ErrorBoundary>{children}</ErrorBoundary>
           </main>
         </div>
