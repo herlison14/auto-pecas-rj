@@ -82,10 +82,10 @@ export default function ReportsPage() {
       {/* Métricas */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />) : [
-          { label: 'Receita Total', value: fmt(overview?.totalRevenue ?? 0), icon: TrendingUp, color: 'bg-blue-50 text-blue-600' },
-          { label: 'Pedidos', value: String(overview?.totalOrders ?? 0), icon: ShoppingCart, color: 'bg-amber-50 text-amber-600' },
-          { label: 'Ticket Médio', value: fmt(overview?.averageTicket ?? 0), icon: Receipt, color: 'bg-emerald-50 text-emerald-600' },
-          { label: 'Cancelamentos', value: String(overview?.totalCancelled ?? 0), icon: XCircle, color: 'bg-red-50 text-red-500' },
+          { label: 'Receita Total', value: fmt(overview?.totalRevenue ?? 0), icon: TrendingUp, color: 'bg-blue-500/15 text-blue-400' },
+          { label: 'Pedidos', value: String(overview?.totalOrders ?? 0), icon: ShoppingCart, color: 'bg-amber-500/15 text-amber-400' },
+          { label: 'Ticket Médio', value: fmt(overview?.averageTicket ?? 0), icon: Receipt, color: 'bg-emerald-500/15 text-emerald-400' },
+          { label: 'Cancelamentos', value: String(overview?.totalCancelled ?? 0), icon: XCircle, color: 'bg-red-500/15 text-red-400' },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="animate-fade-in">
             <CardContent className="p-5">
@@ -164,9 +164,9 @@ export default function ReportsPage() {
         <CardContent>
           <div className="grid grid-cols-4 gap-3">
             {[
-              { label: 'Autorizadas', value: nfe?.authorized ?? 0, cls: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-              { label: 'Pendentes',   value: nfe?.pending ?? 0,    cls: 'bg-amber-50 border-amber-200 text-amber-700' },
-              { label: 'Rejeitadas',  value: nfe?.rejected ?? 0,   cls: 'bg-red-50 border-red-200 text-red-700' },
+              { label: 'Autorizadas', value: nfe?.authorized ?? 0, cls: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },
+              { label: 'Pendentes',   value: nfe?.pending ?? 0,    cls: 'bg-amber-500/10 border-amber-500/20 text-amber-400' },
+              { label: 'Rejeitadas',  value: nfe?.rejected ?? 0,   cls: 'bg-red-500/10 border-red-500/20 text-red-400' },
               { label: 'Canceladas',  value: nfe?.cancelled ?? 0,  cls: 'bg-muted border-border text-muted-foreground' },
             ].map((s) => (
               <div key={s.label} className={cn('rounded-xl border p-4 text-center', s.cls)}>

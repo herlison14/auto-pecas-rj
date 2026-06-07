@@ -27,7 +27,7 @@ function SettingsContent() {
       </div>
 
       {upgradeStatus === 'success' && (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
           <CheckCircle className="h-4 w-4 shrink-0" />
           Plano atualizado com sucesso! Obrigado.
         </div>
@@ -109,7 +109,7 @@ function NfeTab() {
         <CardTitle className="text-sm">Configurações Fiscais (NF-e)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           Configure os dados da sua empresa para emissão de notas fiscais. Em homologação os dados são enviados ao SEFAZ mas não têm validade legal.
         </div>
@@ -256,7 +256,7 @@ function SecurityTab() {
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', enabled ? 'bg-emerald-100' : 'bg-muted')}>
+              <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', enabled ? 'bg-emerald-500/15' : 'bg-muted')}>
                 {enabled ? <ShieldCheck className="h-5 w-5 text-emerald-600" /> : <ShieldOff className="h-5 w-5 text-muted-foreground" />}
               </div>
               <div>
@@ -272,7 +272,7 @@ function SecurityTab() {
           </div>
 
           {msg && (
-            <div className={cn('mt-3 rounded-lg px-3 py-2 text-sm', msg.includes('sucesso') || msg.includes('Ativo') ? 'bg-emerald-50 text-emerald-700' : 'bg-destructive/10 text-destructive')}>
+            <div className={cn('mt-3 rounded-lg px-3 py-2 text-sm', msg.includes('sucesso') || msg.includes('Ativo') ? 'bg-emerald-500/15 text-emerald-400' : 'bg-destructive/10 text-destructive')}>
               {msg}
             </div>
           )}
@@ -406,7 +406,7 @@ function EmailTab() {
               <div onClick={() => toggle(key)}
                 className={cn('relative h-5 w-9 rounded-full transition-colors cursor-pointer',
                   (form as any)[key] ? 'bg-primary' : 'bg-muted border border-input')}>
-                <div className={cn('absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform',
+                <div className={cn('absolute top-0.5 h-4 w-4 rounded-full bg-card shadow transition-transform',
                   (form as any)[key] ? 'translate-x-4' : 'translate-x-0.5')} />
               </div>
             </label>

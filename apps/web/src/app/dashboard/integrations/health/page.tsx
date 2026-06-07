@@ -16,9 +16,9 @@ import { MP_EMOJI } from '@/lib/marketplace'
 
 
 const STATUS_CONFIG: Record<HealthStatus, { label: string; variant: 'success' | 'warning' | 'destructive' | 'secondary'; dot: string }> = {
-  ok:            { label: 'Operacional',   variant: 'success',     dot: 'bg-emerald-500' },
-  token_expired: { label: 'Token expirado',variant: 'warning',     dot: 'bg-amber-500' },
-  error:         { label: 'Erro',          variant: 'destructive', dot: 'bg-red-500' },
+  ok:            { label: 'Operacional',   variant: 'success',     dot: 'bg-emerald-500/10' },
+  token_expired: { label: 'Token expirado',variant: 'warning',     dot: 'bg-amber-500/10' },
+  error:         { label: 'Erro',          variant: 'destructive', dot: 'bg-red-500/10' },
   unconfigured:  { label: 'Desconectado',  variant: 'secondary',   dot: 'bg-muted-foreground/40' },
 }
 

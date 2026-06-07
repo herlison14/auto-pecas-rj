@@ -118,8 +118,8 @@ export default function RepricingPage() {
         <div className="grid grid-cols-3 gap-4">
           {[
             { label: 'Regras ativas', value: stats.active, icon: Zap, color: 'bg-primary/10 text-primary' },
-            { label: 'Total de regras', value: stats.total, icon: TrendingUp, color: 'bg-blue-50 text-blue-600' },
-            { label: 'Ajustes (24h)', value: stats.changes24h, icon: RefreshCw, color: 'bg-emerald-50 text-emerald-600' },
+            { label: 'Total de regras', value: stats.total, icon: TrendingUp, color: 'bg-blue-500/15 text-blue-400' },
+            { label: 'Ajustes (24h)', value: stats.changes24h, icon: RefreshCw, color: 'bg-emerald-500/15 text-emerald-400' },
           ].map(({ label, value, icon: Icon, color }) => (
             <Card key={label}>
               <CardContent className="p-4 flex items-center gap-3">
@@ -138,14 +138,14 @@ export default function RepricingPage() {
 
       {/* Run results */}
       {runResults.length > 0 && (
-        <Card className="border-emerald-200 bg-emerald-50 animate-fade-in">
+        <Card className="border-emerald-500/20 bg-emerald-500/10 animate-fade-in">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-emerald-700">{runResults.length} preço(s) ajustado(s)</CardTitle>
+            <CardTitle className="text-sm text-emerald-400">{runResults.length} preço(s) ajustado(s)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-1.5">
               {runResults.map((r, i) => (
-                <div key={i} className="flex items-center gap-3 text-xs text-emerald-700">
+                <div key={i} className="flex items-center gap-3 text-xs text-emerald-400">
                   <span className="font-mono">{fmt(r.oldPrice)} → {fmt(r.newPrice)}</span>
                   <span className="text-emerald-600/70">{r.reason}</span>
                 </div>

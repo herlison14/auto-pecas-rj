@@ -76,12 +76,12 @@ export default function ImportProductsPage() {
   return (
     <div className="space-y-4 p-6 max-w-4xl">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/products" className="text-sm text-gray-400 hover:text-gray-600">← Voltar</Link>
+        <Link href="/dashboard/products" className="text-sm text-muted-foreground/60 hover:text-muted-foreground">← Voltar</Link>
         <h1 className="text-2xl font-bold">Importar Produtos</h1>
       </div>
 
       {/* Instructions */}
-      <div className="rounded-lg border bg-blue-50 border-blue-200 p-4 text-sm text-blue-800 space-y-2">
+      <div className="rounded-lg border bg-blue-500/10 border-blue-500/20 p-4 text-sm text-blue-400 space-y-2">
         <p className="font-semibold">Como usar:</p>
         <ol className="list-decimal ml-4 space-y-1">
           <li>Baixe o modelo de planilha abaixo</li>
@@ -92,16 +92,16 @@ export default function ImportProductsPage() {
         <a
           href="/templates/products-template.csv"
           download
-          className="inline-flex items-center gap-1 mt-2 text-blue-700 font-semibold hover:underline"
+          className="inline-flex items-center gap-1 mt-2 text-blue-400 font-semibold hover:underline"
         >
           ↓ Baixar modelo CSV
         </a>
       </div>
 
       {/* Colunas aceitas */}
-      <div className="rounded-lg border bg-white p-4 text-sm space-y-2">
-        <p className="font-semibold text-gray-700">Colunas aceitas (cabeçalho em PT ou EN):</p>
-        <div className="grid grid-cols-3 gap-1 text-xs text-gray-500">
+      <div className="rounded-lg border bg-card p-4 text-sm space-y-2">
+        <p className="font-semibold text-foreground">Colunas aceitas (cabeçalho em PT ou EN):</p>
+        <div className="grid grid-cols-3 gap-1 text-xs text-muted-foreground">
           {[
             ['sku / SKU', 'obrigatório'],
             ['name / nome', 'obrigatório'],
@@ -117,8 +117,8 @@ export default function ImportProductsPage() {
             ['stock / estoque', 'quantidade inicial'],
           ].map(([col, note]) => (
             <div key={col} className="flex gap-1">
-              <code className="font-mono text-gray-700">{col}</code>
-              <span className="text-gray-400">— {note}</span>
+              <code className="font-mono text-foreground">{col}</code>
+              <span className="text-muted-foreground/60">— {note}</span>
             </div>
           ))}
         </div>
@@ -126,7 +126,7 @@ export default function ImportProductsPage() {
 
       {/* Upload zone */}
       <div
-        className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-8 text-center cursor-pointer hover:border-blue-400 transition-colors"
+        className="rounded-lg border-2 border-dashed border-border bg-card p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
         onClick={() => fileRef.current?.click()}
       >
         <input
@@ -134,23 +134,23 @@ export default function ImportProductsPage() {
           onChange={handleFileChange}
         />
         <p className="text-3xl mb-2">📂</p>
-        <p className="text-sm font-medium text-gray-700">
+        <p className="text-sm font-medium text-foreground">
           {file ? file.name : 'Clique ou arraste um arquivo CSV ou XLSX'}
         </p>
-        <p className="text-xs text-gray-400 mt-1">Máximo 2.000 produtos · 10 MB</p>
+        <p className="text-xs text-muted-foreground/60 mt-1">Máximo 2.000 produtos · 10 MB</p>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">{error}</div>
+        <div className="rounded-lg bg-red-500/10 border border-red-500/15 px-4 py-3 text-sm text-red-400">{error}</div>
       )}
 
       {/* Preview */}
       {preview && !result && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Pré-visualização: <strong>{preview.length}</strong> de <strong>{total}</strong> produtos
-              {total > 10 && <span className="text-gray-400"> (mostrando primeiros 10)</span>}
+              {total > 10 && <span className="text-muted-foreground/60"> (mostrando primeiros 10)</span>}
             </p>
             <button
               onClick={handleImport}
@@ -163,22 +163,22 @@ export default function ImportProductsPage() {
 
           <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-left">
+              <thead className="bg-muted/30 text-left">
                 <tr>
                   {['SKU', 'Nome', 'Marca', 'NCM', 'Peso (kg)', 'Estoque'].map((h) => (
-                    <th key={h} className="px-3 py-2 text-xs font-semibold text-gray-500 border-b">{h}</th>
+                    <th key={h} className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {preview.map((row, i) => (
-                  <tr key={i} className="border-b last:border-0 hover:bg-gray-50">
-                    <td className="px-3 py-2 font-mono text-gray-600">{row.sku}</td>
+                  <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
+                    <td className="px-3 py-2 font-mono text-muted-foreground">{row.sku}</td>
                     <td className="px-3 py-2 font-medium max-w-xs truncate">{row.name}</td>
-                    <td className="px-3 py-2 text-gray-500">{row.brand ?? '—'}</td>
-                    <td className="px-3 py-2 font-mono text-gray-400">{row.ncm ?? '—'}</td>
-                    <td className="px-3 py-2 text-gray-500">{row.weight ?? '—'}</td>
-                    <td className="px-3 py-2 text-gray-500">{row.stock ?? '—'}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{row.brand ?? '—'}</td>
+                    <td className="px-3 py-2 font-mono text-muted-foreground/60">{row.ncm ?? '—'}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{row.weight ?? '—'}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{row.stock ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -191,38 +191,38 @@ export default function ImportProductsPage() {
       {result && (
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg border bg-green-50 border-green-200 p-4 text-center">
-              <p className="text-3xl font-bold text-green-700">{result.created}</p>
+            <div className="rounded-lg border bg-green-500/10 border-green-500/20 p-4 text-center">
+              <p className="text-3xl font-bold text-green-400">{result.created}</p>
               <p className="text-sm text-green-600 mt-1">Produtos criados</p>
             </div>
-            <div className="rounded-lg border bg-blue-50 border-blue-200 p-4 text-center">
-              <p className="text-3xl font-bold text-blue-700">{result.updated}</p>
+            <div className="rounded-lg border bg-blue-500/10 border-blue-500/20 p-4 text-center">
+              <p className="text-3xl font-bold text-blue-400">{result.updated}</p>
               <p className="text-sm text-blue-600 mt-1">Produtos atualizados</p>
             </div>
-            <div className={`rounded-lg border p-4 text-center ${result.errors.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
-              <p className={`text-3xl font-bold ${result.errors.length > 0 ? 'text-red-700' : 'text-gray-400'}`}>{result.errors.length}</p>
-              <p className={`text-sm mt-1 ${result.errors.length > 0 ? 'text-red-600' : 'text-gray-400'}`}>Erros</p>
+            <div className={`rounded-lg border p-4 text-center ${result.errors.length > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-muted/30 border-border'}`}>
+              <p className={`text-3xl font-bold ${result.errors.length > 0 ? 'text-red-400' : 'text-muted-foreground/60'}`}>{result.errors.length}</p>
+              <p className={`text-sm mt-1 ${result.errors.length > 0 ? 'text-red-600' : 'text-muted-foreground/60'}`}>Erros</p>
             </div>
           </div>
 
           {result.errors.length > 0 && (
             <div className="rounded-lg border overflow-hidden">
-              <div className="bg-red-50 px-4 py-2 border-b">
-                <p className="text-sm font-semibold text-red-700">Linhas com erro</p>
+              <div className="bg-red-500/10 px-4 py-2 border-b">
+                <p className="text-sm font-semibold text-red-400">Linhas com erro</p>
               </div>
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-left border-b">
+                <thead className="bg-muted/30 text-left border-b">
                   <tr>
                     {['Linha', 'SKU', 'Motivo'].map((h) => (
-                      <th key={h} className="px-3 py-2 text-xs font-semibold text-gray-500">{h}</th>
+                      <th key={h} className="px-3 py-2 text-xs font-semibold text-muted-foreground">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {result.errors.map((e, i) => (
                     <tr key={i} className="border-b last:border-0">
-                      <td className="px-3 py-2 text-gray-500">{e.row}</td>
-                      <td className="px-3 py-2 font-mono text-gray-600">{e.sku || '—'}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{e.row}</td>
+                      <td className="px-3 py-2 font-mono text-muted-foreground">{e.sku || '—'}</td>
                       <td className="px-3 py-2 text-red-600">{e.reason}</td>
                     </tr>
                   ))}
@@ -240,7 +240,7 @@ export default function ImportProductsPage() {
             </button>
             <button
               onClick={() => { setFile(null); setPreview(null); setResult(null); setError('') }}
-              className="rounded-lg border px-5 py-2 text-sm hover:bg-gray-50"
+              className="rounded-lg border px-5 py-2 text-sm hover:bg-muted/30"
             >
               Nova importação
             </button>

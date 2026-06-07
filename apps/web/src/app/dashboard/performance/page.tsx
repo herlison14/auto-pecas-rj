@@ -74,14 +74,14 @@ export default function PerformancePage() {
             label: 'Taxa de Entrega',
             value: summary?.deliveryRate != null ? `${summary.deliveryRate}%` : '—',
             icon: CheckCircle,
-            color: 'bg-emerald-50 text-emerald-600',
+            color: 'bg-emerald-500/15 text-emerald-400',
             good: summary?.deliveryRate >= 85,
           },
           {
             label: 'Taxa de Cancelamento',
             value: summary?.cancellationRate != null ? `${summary.cancellationRate}%` : '—',
             icon: XCircle,
-            color: summary?.cancellationRate <= 5 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600',
+            color: summary?.cancellationRate <= 5 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400',
             good: true,
           },
           {
@@ -90,7 +90,7 @@ export default function PerformancePage() {
               ? (summary.avgShippingHours < 48 ? `${summary.avgShippingHours}h` : `${(summary.avgShippingHours / 24).toFixed(1)}d`)
               : '—',
             icon: Truck,
-            color: summary?.avgShippingHours <= 24 ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600',
+            color: summary?.avgShippingHours <= 24 ? 'bg-blue-500/15 text-blue-400' : 'bg-amber-500/15 text-amber-400',
             good: true,
           },
           {

@@ -90,9 +90,9 @@ export default function PricingPage() {
             </div>
             <Button variant="secondary" onClick={simulate} disabled={!simBase}>Simular</Button>
             {simResult && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm flex items-center gap-2">
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-emerald-600" />
-                <span className="font-bold text-emerald-700">
+                <span className="font-bold text-emerald-400">
                   {simResult.finalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
                 <span className="text-emerald-600 text-xs">margem: {simResult.margin}%</span>
@@ -172,7 +172,7 @@ export default function PricingPage() {
                   <td className="px-4 py-3">
                     <button onClick={() => toggleRule.mutate({ id: rule.id, isActive: !rule.isActive })}
                       className={cn('relative inline-flex h-5 w-9 items-center rounded-full transition-colors', rule.isActive ? 'bg-primary' : 'bg-muted-foreground/30')}>
-                      <span className={cn('inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform', rule.isActive ? 'translate-x-[18px]' : 'translate-x-[2px]')} />
+                      <span className={cn('inline-block h-3.5 w-3.5 rounded-full bg-card shadow transition-transform', rule.isActive ? 'translate-x-[18px]' : 'translate-x-[2px]')} />
                     </button>
                   </td>
                   <td className="px-4 py-3 text-right">

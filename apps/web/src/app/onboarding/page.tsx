@@ -27,12 +27,12 @@ const STEPS = [
 ] as const
 
 const MARKETPLACES = [
-  { key: 'MERCADO_LIVRE', name: 'Mercado Livre', emoji: '🟡', color: 'border-yellow-300 hover:bg-yellow-50', path: '/dashboard/integrations' },
-  { key: 'SHOPEE',        name: 'Shopee',        emoji: '🟠', color: 'border-orange-300 hover:bg-orange-50', path: '/dashboard/integrations' },
-  { key: 'AMAZON',        name: 'Amazon',        emoji: '🔵', color: 'border-blue-300 hover:bg-blue-50',     path: '/dashboard/integrations' },
-  { key: 'MAGALU',        name: 'Magalu',        emoji: '🟢', color: 'border-green-300 hover:bg-green-50',   path: '/dashboard/integrations' },
-  { key: 'AMERICANAS',    name: 'Americanas',    emoji: '🔴', color: 'border-red-300 hover:bg-red-50',       path: '/dashboard/integrations' },
-  { key: 'SHEIN',         name: 'Shein',         emoji: '⚫', color: 'border-gray-300 hover:bg-gray-50',     path: '/dashboard/integrations' },
+  { key: 'MERCADO_LIVRE', name: 'Mercado Livre', emoji: '🟡', color: 'border-yellow-300 hover:bg-yellow-500/10', path: '/dashboard/integrations' },
+  { key: 'SHOPEE',        name: 'Shopee',        emoji: '🟠', color: 'border-orange-300 hover:bg-orange-500/10', path: '/dashboard/integrations' },
+  { key: 'AMAZON',        name: 'Amazon',        emoji: '🔵', color: 'border-blue-300 hover:bg-blue-500/10',     path: '/dashboard/integrations' },
+  { key: 'MAGALU',        name: 'Magalu',        emoji: '🟢', color: 'border-green-300 hover:bg-green-500/10',   path: '/dashboard/integrations' },
+  { key: 'AMERICANAS',    name: 'Americanas',    emoji: '🔴', color: 'border-red-300 hover:bg-red-500/10',       path: '/dashboard/integrations' },
+  { key: 'SHEIN',         name: 'Shein',         emoji: '⚫', color: 'border-border hover:bg-muted/30',     path: '/dashboard/integrations' },
 ]
 
 // ── Step components ────────────────────────────────────────────────────────────
@@ -256,7 +256,7 @@ function StepFiscal({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
 function StepDone({ onFinish }: { onFinish: () => void }) {
   return (
     <div className="text-center space-y-6">
-      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
+      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/15">
         <Sparkles className="h-10 w-10 text-emerald-600" />
       </div>
       <div>
@@ -274,7 +274,7 @@ function StepDone({ onFinish }: { onFinish: () => void }) {
           'Relatórios financeiros e de performance',
         ].map((item) => (
           <div key={item} className="flex items-center gap-2 text-sm">
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15">
               <Check className="h-3 w-3 text-emerald-600" />
             </div>
             {item}
@@ -329,7 +329,7 @@ function OnboardingContent() {
             )}>
               <div className={cn(
                 'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
-                step > s.id ? 'bg-emerald-500 text-white' :
+                step > s.id ? 'bg-emerald-500/10 text-white' :
                 step === s.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground/60',
               )}>
                 {step > s.id ? <Check className="h-3.5 w-3.5" /> : s.id + 1}

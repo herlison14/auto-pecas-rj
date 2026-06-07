@@ -84,9 +84,9 @@ export default function CatalogPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Anúncios ativos', value: stats?.activeListings ?? '—', icon: Layers, color: 'bg-blue-50 text-blue-600' },
-          { label: 'Sincronizados (24h)', value: stats?.recentlySynced ?? '—', icon: CheckCircle, color: 'bg-emerald-50 text-emerald-600' },
-          { label: 'Com drift', value: loadingDrift ? '—' : drifts.length, icon: AlertTriangle, color: drifts.length > 0 ? 'bg-amber-50 text-amber-600' : 'bg-muted text-muted-foreground' },
+          { label: 'Anúncios ativos', value: stats?.activeListings ?? '—', icon: Layers, color: 'bg-blue-500/15 text-blue-400' },
+          { label: 'Sincronizados (24h)', value: stats?.recentlySynced ?? '—', icon: CheckCircle, color: 'bg-emerald-500/15 text-emerald-400' },
+          { label: 'Com drift', value: loadingDrift ? '—' : drifts.length, icon: AlertTriangle, color: drifts.length > 0 ? 'bg-amber-500/15 text-amber-400' : 'bg-muted text-muted-foreground' },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label}>
             <CardContent className="p-4 flex items-center gap-3">
@@ -104,17 +104,17 @@ export default function CatalogPage() {
 
       {/* Drift alerts */}
       {drifts.length > 0 && (
-        <Card className="border-amber-200">
+        <Card className="border-amber-500/20">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2 text-amber-700">
+              <CardTitle className="text-sm flex items-center gap-2 text-amber-400">
                 <AlertTriangle className="h-4 w-4" />
                 {drifts.length} anúncio(s) com divergência detectada
               </CardTitle>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedDrift(drifts.map((d: any) => d.listingId))}
-                  className="text-xs text-amber-700 hover:underline"
+                  className="text-xs text-amber-400 hover:underline"
                 >
                   Selecionar tudo
                 </button>
@@ -123,11 +123,11 @@ export default function CatalogPage() {
           </CardHeader>
           <CardContent className="p-0">
             <table className="w-full text-sm">
-              <thead className="bg-amber-50/50 border-b border-amber-200">
+              <thead className="bg-amber-500/10/50 border-b border-amber-500/20">
                 <tr>
                   <th className="w-10 px-4 py-2.5" />
                   {['Produto', 'Canal', 'Divergência', ''].map((h) => (
-                    <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-amber-800">{h}</th>
+                    <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-amber-400">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -136,7 +136,7 @@ export default function CatalogPage() {
                   const isSynced = syncedIds.has(d.listingId)
                   return (
                     <tr key={d.listingId} className={cn('border-b last:border-0',
-                      isSynced ? 'opacity-50' : 'hover:bg-amber-50/30 transition-colors')}>
+                      isSynced ? 'opacity-50' : 'hover:bg-amber-500/10/30 transition-colors')}>
                       <td className="px-4 py-3">
                         <input type="checkbox"
                           checked={selectedDrift.includes(d.listingId)}

@@ -46,7 +46,7 @@ function PriceCell({ listing, onSave }: { listing: Listing; onSave: (id: string,
           }}
         />
         <button onClick={() => { onSave(listing.id, Number(val)); setEditing(false) }}
-          className="text-emerald-600 hover:text-emerald-700">
+          className="text-emerald-600 hover:text-emerald-400">
           <Check className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -146,8 +146,8 @@ export default function ListingsPage() {
           <p className="text-sm text-muted-foreground mt-0.5">Gerencie todos os seus anúncios em um só lugar</p>
         </div>
         {selectedList.length > 0 && (
-          <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm">
-            <span className="font-semibold text-blue-800">{selectedList.length} selecionados</span>
+          <div className="flex items-center gap-2 rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-sm">
+            <span className="font-semibold text-blue-400">{selectedList.length} selecionados</span>
             <Button variant="outline" size="sm" className="h-7 text-xs"
               onClick={() => bulkUpdate.mutate({ ids: selectedList, status: 'ACTIVE' })}>
               <Play className="h-3 w-3" /> Ativar

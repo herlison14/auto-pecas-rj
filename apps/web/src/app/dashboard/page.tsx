@@ -352,9 +352,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               {[
-                { href: '/dashboard/orders',       label: 'Pedidos pendentes',  desc: `${extras?.pendingOrders ?? 0} aguardando`, color: 'hover:bg-amber-500/10' },
-                { href: '/dashboard/inventory',    label: 'Estoque baixo',      desc: `${extras?.lowStockCount ?? 0} produtos`, color: 'hover:bg-red-500/10' },
-                { href: '/dashboard/integrations', label: 'Canais ativos',      desc: `${extras?.connectedStores ?? 0} conectados`, color: 'hover:bg-blue-500/10' },
+                { href: '/dashboard/orders',       label: 'Pedidos pendentes',  desc: `${extras?.pendingOrders ?? 0} aguardando`, color: 'hover:bg-amber-500/10/10' },
+                { href: '/dashboard/inventory',    label: 'Estoque baixo',      desc: `${extras?.lowStockCount ?? 0} produtos`, color: 'hover:bg-red-500/10/10' },
+                { href: '/dashboard/integrations', label: 'Canais ativos',      desc: `${extras?.connectedStores ?? 0} conectados`, color: 'hover:bg-blue-500/10/10' },
                 { href: '/dashboard/catalog',      label: 'Sync catálogo',      desc: 'Verificar divergências', color: 'hover:bg-violet-500/10' },
               ].map(({ href, label, desc, color }) => (
                 <Link key={href} href={href}

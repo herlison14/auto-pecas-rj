@@ -89,10 +89,10 @@ export default function ReturnsPage() {
       ) : (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            { label: 'Pendentes', value: summary?.pending ?? 0, icon: Clock, cls: 'text-amber-600', bg: 'bg-amber-50' },
-            { label: 'Reembolsados', value: summary?.refunded ?? 0, icon: CheckCircle, cls: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'Rejeitados', value: summary?.rejected ?? 0, icon: XCircle, cls: 'text-red-600', bg: 'bg-red-50' },
-            { label: 'Valor reembolsado', value: fmt(summary?.refundTotal ?? 0), icon: RotateCcw, cls: 'text-blue-600', bg: 'bg-blue-50' },
+            { label: 'Pendentes', value: summary?.pending ?? 0, icon: Clock, cls: 'text-amber-600', bg: 'bg-amber-500/10' },
+            { label: 'Reembolsados', value: summary?.refunded ?? 0, icon: CheckCircle, cls: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+            { label: 'Rejeitados', value: summary?.rejected ?? 0, icon: XCircle, cls: 'text-red-600', bg: 'bg-red-500/10' },
+            { label: 'Valor reembolsado', value: fmt(summary?.refundTotal ?? 0), icon: RotateCcw, cls: 'text-blue-600', bg: 'bg-blue-500/10' },
           ].map(({ label, value, icon: Icon, cls, bg }) => (
             <Card key={label}>
               <CardContent className="p-5 flex items-start justify-between">

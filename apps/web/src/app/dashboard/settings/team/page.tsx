@@ -184,13 +184,13 @@ export default function TeamPage() {
           )}
 
           {inviteUrl && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-2">
-              <div className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 space-y-2">
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-emerald-400">
                 <CheckCircle className="h-4 w-4" /> Convite criado!
               </div>
               <p className="text-xs text-emerald-600">Compartilhe este link com o convidado:</p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 rounded-lg bg-white border border-emerald-200 px-2 py-1.5 text-xs break-all text-foreground">
+                <code className="flex-1 rounded-lg bg-card border border-emerald-500/20 px-2 py-1.5 text-xs break-all text-foreground">
                   {inviteUrl}
                 </code>
                 <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={copyUrl}>

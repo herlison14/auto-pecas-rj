@@ -540,7 +540,7 @@ export default function SuppliersPage() {
                             </Button>
                           )}
                           {(po.status === 'SENT' || po.status === 'PARTIAL') && (
-                            <Button variant="outline" size="sm" className="h-7 text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                            <Button variant="outline" size="sm" className="h-7 text-xs text-emerald-400 border-emerald-300 hover:bg-emerald-500/10"
                               onClick={() => setReceivingPo(po)}>
                               <CheckCircle className="h-3 w-3" /> Receber
                             </Button>
