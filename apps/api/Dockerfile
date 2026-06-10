@@ -20,7 +20,11 @@ COPY apps/api/ ./apps/api/
 # Generate Prisma client
 RUN cd packages/database && npx prisma generate
 
-# Build TypeScript
+# Build workspace packages
+RUN cd packages/nfe && npm run build
+RUN cd packages/integrations && npm run build
+
+# Build API
 RUN cd apps/api && npm run build
 
 # ── Production image ──────────────────────────────────────────────────────────
@@ -41,6 +45,8 @@ COPY packages/nfe/package.json ./packages/nfe/
 RUN npm install --workspaces --include-workspace-root --omit=dev
 
 COPY packages/ ./packages/
+COPY --from=base /app/packages/nfe/dist ./packages/nfe/dist
+COPY --from=base /app/packages/integrations/dist ./packages/integrations/dist
 COPY --from=base /app/apps/api/dist ./apps/api/dist
 COPY --from=base /app/node_modules/.prisma ./node_modules/.prisma
 

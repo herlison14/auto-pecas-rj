@@ -2,7 +2,10 @@
   "name": "@sellsync/nfe",
   "version": "0.1.0",
   "private": true,
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
   "dependencies": {
     "@sellsync/database": "*",
     "axios": "^1.7.0"
