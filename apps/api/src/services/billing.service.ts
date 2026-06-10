@@ -1,7 +1,11 @@
 import Stripe from 'stripe'
 import { prisma } from '@sellsync/database'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '2025-02-24.acacia' })
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key) throw new Error('Stripe not configured (STRIPE_SECRET_KEY missing)')
+  return new Stripe(key, { apiVersion: '2025-02-24.acacia' })
+}
 
 export const PLANS = {
   FREE: {
@@ -35,7 +39,7 @@ export class BillingService {
 
     const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } })
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl,
@@ -55,10 +59,10 @@ export class BillingService {
     const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } })
 
     // Busca customerId salvo (em produção, salvar no banco)
-    const customers = await stripe.customers.search({ query: `metadata['tenantId']:'${tenantId}'` })
+    const customers = await getStripe().customers.search({ query: `metadata['tenantId']:'${tenantId}'` })
     if (!customers.data.length) throw new Error('Nenhuma assinatura encontrada')
 
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await getStripe().billingPortal.sessions.create({
       customer: customers.data[0].id,
       return_url: returnUrl,
     })
@@ -67,7 +71,7 @@ export class BillingService {
   }
 
   async handleWebhook(rawBody: Buffer, signature: string) {
-    const event = stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET!)
+    const event = getStripe().webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET!)
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session
