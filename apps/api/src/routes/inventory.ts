@@ -60,7 +60,7 @@ export async function inventoryRoutes(app: FastifyInstance) {
     const tenantId = (req.user as { tenantId: string }).tenantId
     const body = z.object({ name: z.string().min(2), address: z.record(z.unknown()).optional() }).parse(req.body)
     const count = await prisma.warehouse.count({ where: { tenantId } })
-    const warehouse = await prisma.warehouse.create({ data: { tenantId, ...body, isDefault: count === 0 } })
+    const warehouse = await prisma.warehouse.create({ data: { tenantId, name: body.name, isDefault: count === 0, address: body.address as any } })
     return reply.code(201).send(warehouse)
   })
 }

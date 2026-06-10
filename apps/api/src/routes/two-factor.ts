@@ -79,14 +79,13 @@ export async function twoFactorRoutes(app: FastifyInstance) {
 
     const user = await prisma.user.findUniqueOrThrow({
       where: { id: payload.userId },
-      select: { twoFactorSecret: true, twoFactorEnabled: true },
-      include: { tenant: { select: { id: true, name: true, slug: true, plan: true } } } as any,
+      include: { tenant: { select: { id: true, name: true, slug: true, plan: true } } },
     })
 
     if (!user.twoFactorEnabled || !user.twoFactorSecret) return reply.code(400).send({ error: '2FA não configurado' })
     if (!verifyTotp(user.twoFactorSecret, token)) return reply.code(401).send({ error: 'Código incorreto' })
 
-    const finalToken = app.jwt.sign({ userId: payload.userId, tenantId: payload.tenantId, role: payload.role }, { expiresIn: '7d' })
+    const finalToken = app.jwt.sign({ userId: payload.userId, tenantId: payload.tenantId, role: payload.role as 'OWNER' | 'ADMIN' | 'OPERATOR' }, { expiresIn: '7d' })
     return { token: finalToken }
   })
 }

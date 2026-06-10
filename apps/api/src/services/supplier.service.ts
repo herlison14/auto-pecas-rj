@@ -123,18 +123,17 @@ export async function receivePurchaseOrder(tenantId: string, id: string, items: 
       await tx.stockItem.upsert({
         where: { productId_warehouseId: { productId: poItem.productId, warehouseId } },
         update: { quantity: { increment: recv.receivedQty } },
-        create: { productId: poItem.productId, warehouseId, tenantId, quantity: recv.receivedQty },
+        create: { productId: poItem.productId, warehouseId, quantity: recv.receivedQty },
       })
 
       await tx.stockMovement.create({
         data: {
-          tenantId,
           productId: poItem.productId,
           warehouseId,
           type: 'IN',
           quantity: recv.receivedQty,
           reason: `Recebimento OC ${po.number}`,
-          referenceId: po.id,
+          orderId: po.id,
         },
       })
     }

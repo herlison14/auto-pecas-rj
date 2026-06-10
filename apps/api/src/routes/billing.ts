@@ -6,12 +6,10 @@ const service = new BillingService()
 
 export async function billingRoutes(app: FastifyInstance) {
   // Webhook do Stripe — sem autenticação JWT (usa assinatura Stripe)
-  app.post('/webhook', {
-    config: { rawBody: true },
-  }, async (req, reply) => {
+  app.post('/webhook', async (req, reply) => {
     const sig = req.headers['stripe-signature'] as string
     try {
-      const result = await service.handleWebhook(req.rawBody as Buffer, sig)
+      const result = await service.handleWebhook(Buffer.from(JSON.stringify(req.body)), sig)
       return result
     } catch (err) {
       app.log.error(err)

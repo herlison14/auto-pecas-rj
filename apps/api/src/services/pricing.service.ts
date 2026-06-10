@@ -36,7 +36,7 @@ export class PricingService {
   }>) {
     return prisma.pricingRule.update({
       where: { id: ruleId, tenantId },
-      data,
+      data: data as any,
     })
   }
 

@@ -37,7 +37,7 @@ export async function productsRoutes(app: FastifyInstance) {
         where,
         include: {
           stockItems: { include: { warehouse: { select: { name: true } } } },
-          listings: { select: { id: true, marketplace: false, storeId: true, status: true, price: true, store: { select: { marketplace: true } } } },
+          listings: { select: { id: true, storeId: true, status: true, price: true, store: { select: { marketplace: true } } } },
           _count: { select: { listings: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -66,15 +66,17 @@ export async function productsRoutes(app: FastifyInstance) {
   app.post('/', async (req, reply) => {
     const tenantId = (req.user as { tenantId: string }).tenantId
     const body = productSchema.parse(req.body)
-    const product = await prisma.product.create({ data: { tenantId, ...body } })
+    const product = await prisma.product.create({ data: { tenantId, ...body, attributes: body.attributes as any } })
     return reply.code(201).send(product)
   })
 
-  app.put('/:id', async (req) => {
+  app.put('/:id', async (req, reply) => {
     const { id } = req.params as { id: string }
     const tenantId = (req.user as { tenantId: string }).tenantId
+    const existing = await prisma.product.findFirst({ where: { id, tenantId } })
+    if (!existing) return reply.code(404).send({ error: 'Produto não encontrado' })
     const body = productSchema.partial().parse(req.body)
-    return prisma.product.update({ where: { id, tenantId }, data: body })
+    return prisma.product.update({ where: { id }, data: { ...body, attributes: body.attributes as any } })
   })
 
   app.delete('/:id', async (req, reply) => {

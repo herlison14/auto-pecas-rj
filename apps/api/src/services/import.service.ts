@@ -43,7 +43,7 @@ export async function parseSpreadsheet(buffer: Buffer, mimetype: string): Promis
   } else {
     // XLSX: magic bytes 50 4B 03 04 (ZIP/Office Open XML)
     const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load(buffer)
+    await (wb.xlsx.load as unknown as (b: unknown) => Promise<void>)(buffer)
     const ws = wb.worksheets[0]
     if (!ws) return []
     const headers: string[] = []

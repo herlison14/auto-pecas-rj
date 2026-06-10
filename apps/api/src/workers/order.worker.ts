@@ -21,15 +21,15 @@ export async function processOrder(job: Job) {
         storeId,
         externalId,
         marketplace: store.marketplace,
-        status: mapStatus(rawOrder.status, store.marketplace),
+        status: mapStatus(rawOrder.status, store.marketplace) as any,
         buyerName: rawOrder.buyerName,
         buyerEmail: rawOrder.buyerEmail,
-        shippingAddr: rawOrder.shippingAddress,
+        shippingAddr: rawOrder.shippingAddress as any,
         subtotal: rawOrder.subtotal,
         shippingCost: rawOrder.shippingCost,
         total: rawOrder.total,
         paidAt: rawOrder.paidAt,
-        externalData: rawOrder.rawData,
+        externalData: rawOrder.rawData as any,
         items: {
           create: rawOrder.items.map((item) => ({
             externalId: item.externalId,
@@ -42,8 +42,8 @@ export async function processOrder(job: Job) {
         },
       },
       update: {
-        status: mapStatus(rawOrder.status, store.marketplace),
-        externalData: rawOrder.rawData,
+        status: mapStatus(rawOrder.status, store.marketplace) as any,
+        externalData: rawOrder.rawData as any,
       },
     })
 

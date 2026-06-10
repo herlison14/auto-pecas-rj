@@ -16,8 +16,8 @@ export class OrderService {
   async list({ tenantId, page, limit, status, marketplace, search, from, to }: ListParams) {
     const where = {
       tenantId,
-      ...(status && { status }),
-      ...(marketplace && { marketplace }),
+      ...(status && { status: status as any }),
+      ...(marketplace && { marketplace: marketplace as any }),
       ...(search && {
         OR: [
           { externalId: { contains: search } },
