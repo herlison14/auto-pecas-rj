@@ -1,5 +1,7 @@
 FROM node:22-alpine AS base
 
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 # Install dependencies at root (workspace)
@@ -23,6 +25,8 @@ RUN cd apps/api && npm run build
 
 # ── Production image ──────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner
+
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
