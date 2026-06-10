@@ -3,12 +3,14 @@ import { Queue } from 'bullmq'
 function parseRedisUrl(url: string) {
   try {
     const u = new URL(url)
+    const tls = u.protocol === 'rediss:' ? { tls: true } : {}
     return {
       host: u.hostname,
       port: Number(u.port) || 6379,
       password: u.password || undefined,
       maxRetriesPerRequest: null as null,
       enableReadyCheck: false,
+      ...tls,
     }
   } catch {
     return { host: 'localhost', port: 6379, maxRetriesPerRequest: null as null, enableReadyCheck: false }
