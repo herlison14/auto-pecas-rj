@@ -341,10 +341,10 @@ Todo desenvolvimento desta sessão foi feito nesta branch. Fazer merge para `mai
 - [x] Prisma OpenSSL Alpine resolvido
 - [x] Workspace packages compilando para produção (exports field)
 - [x] Stripe lazy init (não crasha sem a key)
+- [x] `NEXT_PUBLIC_API_URL=https://auto-pecas-rj.onrender.com` configurado no Vercel
+- [x] `WEB_URL=https://herlison14-sellsync.vercel.app` configurado no Render (CORS)
 
 ### Pendente
-- [ ] Configurar `NEXT_PUBLIC_API_URL=https://auto-pecas-rj.onrender.com` no Vercel
-- [ ] Configurar `WEB_URL=https://herlison14-sellsync.vercel.app` no Render (CORS)
 - [ ] Testar registro e login com API real
 - [ ] Conectar primeiro marketplace (Mercado Livre OAuth)
 - [ ] Configurar Stripe para billing
