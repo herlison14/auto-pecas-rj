@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { QueryProvider } from '@/components/ui/query-provider'
+import { AuthGuard } from '@/components/ui/auth-guard'
 
 // ── Step types ─────────────────────────────────────────────────────────────────
 
@@ -368,7 +369,9 @@ function OnboardingContent() {
 export default function OnboardingPage() {
   return (
     <QueryProvider>
-      <OnboardingContent />
+      <AuthGuard>
+        <OnboardingContent />
+      </AuthGuard>
     </QueryProvider>
   )
 }

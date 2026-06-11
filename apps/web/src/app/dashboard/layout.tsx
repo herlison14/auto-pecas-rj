@@ -6,10 +6,12 @@ import { PageHelp } from '@/components/ui/page-help'
 import { AutoPrintAgent } from '@/components/ui/auto-print-agent'
 import { OnboardingBanner } from '@/components/ui/onboarding-banner'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
+import { AuthGuard } from '@/components/ui/auth-guard'
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <QueryProvider>
+      <AuthGuard>
       <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -27,6 +29,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <AutoPrintAgent />
         </div>
       </div>
+      </AuthGuard>
     </QueryProvider>
   )
 }
