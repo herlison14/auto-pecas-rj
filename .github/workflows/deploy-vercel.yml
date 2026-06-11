@@ -7,9 +7,6 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      vercel_token:
-        description: 'Vercel token (sobrepõe o secret VERCEL_TOKEN)'
-        required: false
       vercel_project:
         description: 'Nome do projeto no Vercel'
         required: false
@@ -19,7 +16,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      VERCEL_TOKEN: ${{ github.event.inputs.vercel_token || secrets.VERCEL_TOKEN }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_PROJECT: ${{ github.event.inputs.vercel_project || 'herlison14-sellsync' }}
 
     steps:
@@ -28,19 +25,9 @@ jobs:
       - name: Validate token
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
-            echo "::error::VERCEL_TOKEN vazio. Configure o secret VERCEL_TOKEN no repositório ou rode via workflow_dispatch passando o input vercel_token."
+            echo "::error::Secret VERCEL_TOKEN não configurado no repositório (Settings → Secrets → Actions)."
             exit 1
           fi
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: apps/web/package-lock.json
-
-      - name: Install dependencies
-        run: npm install
-        working-directory: apps/web
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
@@ -49,18 +36,12 @@ jobs:
         run: vercel link --yes --project "$VERCEL_PROJECT" --token "$VERCEL_TOKEN"
         working-directory: apps/web
 
-      - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
-        working-directory: apps/web
-
-      - name: Build project
-        run: vercel build --prod --token "$VERCEL_TOKEN"
-        working-directory: apps/web
-
-      - name: Deploy to Vercel
+      # Build remoto nos servidores do Vercel: usa as env vars do painel
+      # (NEXT_PUBLIC_API_URL) e evita problemas de hoisting do monorepo no CI.
+      - name: Deploy to Vercel (remote build)
         id: deploy
         run: |
-          URL=$(vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN")
+          URL=$(vercel deploy --prod --token "$VERCEL_TOKEN")
           echo "url=$URL" >> $GITHUB_OUTPUT
           echo "✅ Deployed: $URL"
         working-directory: apps/web
