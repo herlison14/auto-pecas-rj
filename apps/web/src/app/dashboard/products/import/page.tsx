@@ -109,21 +109,21 @@ export default function ImportProductsPage() {
 
       {/* Colunas aceitas */}
       <div className="rounded-lg border bg-card p-4 text-sm space-y-2">
-        <p className="font-semibold text-foreground">Colunas aceitas (cabeçalho em PT ou EN):</p>
+        <p className="font-semibold text-foreground">Colunas aceitas (em português ou inglês, com ou sem acentos):</p>
         <div className="grid grid-cols-3 gap-1 text-xs text-muted-foreground">
           {[
-            ['sku / SKU', 'obrigatório'],
-            ['name / nome', 'obrigatório'],
-            ['description / descrição', 'opcional'],
-            ['brand / marca', 'opcional'],
-            ['ncm / NCM', 'opcional'],
-            ['gtin / ean / EAN', 'opcional'],
-            ['weight / peso', 'kg'],
-            ['height / altura', 'cm'],
-            ['width / largura', 'cm'],
-            ['length / comprimento', 'cm'],
-            ['images / imagens', 'URLs separadas por vírgula'],
-            ['stock / estoque', 'quantidade inicial'],
+            ['SKU', 'obrigatório'],
+            ['Nome', 'obrigatório'],
+            ['Descrição', 'opcional'],
+            ['Marca', 'opcional'],
+            ['NCM', 'opcional'],
+            ['EAN', 'opcional'],
+            ['Peso (kg)', 'aceita vírgula: 1,5'],
+            ['Altura (cm)', 'opcional'],
+            ['Largura (cm)', 'opcional'],
+            ['Comprimento (cm)', 'opcional'],
+            ['Imagens', 'URLs separadas por vírgula'],
+            ['Estoque', 'quantidade inicial'],
           ].map(([col, note]) => (
             <div key={col} className="flex gap-1">
               <code className="font-mono text-foreground">{col}</code>

@@ -24,8 +24,14 @@ export interface ImportResult {
 }
 
 function toNum(v: unknown): number | undefined {
-  const n = Number(v)
-  return isNaN(n) || v === '' || v == null ? undefined : n
+  if (v == null || v === '') return undefined
+  if (typeof v === 'number') return isNaN(v) ? undefined : v
+  let s = String(v).trim()
+  // Formato brasileiro: "1,5" → 1.5 e "1.234,56" → 1234.56
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, '').replace(',', '.')
+  else s = s.replace(',', '.')
+  const n = Number(s)
+  return isNaN(n) ? undefined : n
 }
 
 export async function parseSpreadsheet(buffer: Buffer, _mimetype: string): Promise<ImportRow[]> {
@@ -68,21 +74,37 @@ export async function parseSpreadsheet(buffer: Buffer, _mimetype: string): Promi
     })
   }
 
-  return rawRows.map((row) => ({
-    sku: String(row['sku'] ?? row['SKU'] ?? '').trim(),
-    name: String(row['name'] ?? row['nome'] ?? row['Nome'] ?? '').trim(),
-    description: String(row['description'] ?? row['descricao'] ?? row['descrição'] ?? '').trim() || undefined,
-    brand: String(row['brand'] ?? row['marca'] ?? row['Marca'] ?? '').trim() || undefined,
-    ncm: String(row['ncm'] ?? row['NCM'] ?? '').replace(/\D/g, '') || undefined,
-    gtin: String(row['gtin'] ?? row['ean'] ?? row['EAN'] ?? row['GTIN'] ?? '').trim() || undefined,
-    weight: toNum(row['weight'] ?? row['peso'] ?? row['Peso (kg)']),
-    height: toNum(row['height'] ?? row['altura'] ?? row['Altura (cm)']),
-    width: toNum(row['width'] ?? row['largura'] ?? row['Largura (cm)']),
-    length: toNum(row['length'] ?? row['comprimento'] ?? row['Comprimento (cm)']),
-    images: String(row['images'] ?? row['imagens'] ?? row['imagem'] ?? '').trim() || undefined,
-    price: toNum(row['price'] ?? row['preco'] ?? row['preço'] ?? row['Preço']),
-    stock: toNum(row['stock'] ?? row['estoque'] ?? row['Estoque']),
-  }))
+  return rawRows.map((row) => {
+    // Normaliza cabeçalhos: minúsculas, sem acentos, sem sufixos como "(kg)"
+    // — aceita "Descrição", "PESO (KG)", "Comprimento (cm)" etc.
+    const norm: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(row)) {
+      const nk = k
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\(.*?\)/g, '')
+        .trim()
+      norm[nk] = v
+    }
+    const get = (...keys: string[]) => keys.map((k) => norm[k]).find((v) => v != null && v !== '')
+
+    return {
+      sku: String(get('sku', 'codigo') ?? '').trim(),
+      name: String(get('name', 'nome', 'produto') ?? '').trim(),
+      description: String(get('description', 'descricao') ?? '').trim() || undefined,
+      brand: String(get('brand', 'marca') ?? '').trim() || undefined,
+      ncm: String(get('ncm') ?? '').replace(/\D/g, '') || undefined,
+      gtin: String(get('gtin', 'ean', 'codigo de barras') ?? '').trim() || undefined,
+      weight: toNum(get('weight', 'peso')),
+      height: toNum(get('height', 'altura')),
+      width: toNum(get('width', 'largura')),
+      length: toNum(get('length', 'comprimento')),
+      images: String(get('images', 'imagens', 'imagem', 'fotos') ?? '').trim() || undefined,
+      price: toNum(get('price', 'preco')),
+      stock: toNum(get('stock', 'estoque', 'quantidade')),
+    }
+  })
 }
 
 export async function importProducts(
