@@ -36,9 +36,14 @@ const HELP: Record<string, HelpEntry> = {
       'Use os filtros de status (pendente, pago, enviado, entregue, cancelado) para organizar a fila.',
       'Clique em um pedido para ver os detalhes: itens, comprador, endereço e valores.',
       'Atualize o status do pedido conforme avança no processamento (separação → envio).',
-      'Na tela de detalhe é possível emitir a NF-e do pedido (requer NFe.io configurado).',
+      'Quando um pedido é confirmado e pago, a NF-e é emitida automaticamente (configure os dados fiscais em Configurações → Fiscal).',
+      'Assim que a nota é autorizada, a DANFE entra na fila de impressão automática — o diálogo de impressão abre sozinho com a página do sistema aberta.',
+      'Na tela de detalhe do pedido você também pode imprimir a DANFE manualmente ou baixar o PDF.',
     ],
-    tips: ['Pedidos pendentes aparecem como alerta no Dashboard para você não perder prazos.'],
+    tips: [
+      'Pedidos pendentes aparecem como alerta no Dashboard para você não perder prazos.',
+      'A impressão funciona com qualquer impressora instalada no computador: térmica, jato de tinta ou laser — quem cuida do hardware é o driver do sistema.',
+    ],
   },
   '/dashboard/inventory': {
     title: 'Estoque',
@@ -207,6 +212,7 @@ const HELP: Record<string, HelpEntry> = {
     intro: 'Configurações da conta: dados da empresa, equipe, segurança, e-mail e plano.',
     steps: [
       'Em "Empresa", atualize nome e dados fiscais (CNPJ, regime tributário) usados na NF-e.',
+      'Em "Fiscal (NF-e)", configure CNPJ, razão social e ligue/desligue a emissão e a impressão automáticas da nota.',
       'Em "Equipe", convide usuários e defina permissões (Admin, Gerente, Operador).',
       'Em "Segurança", ative a autenticação em dois fatores (2FA) para proteger a conta.',
       'Em "Plano", veja seu plano atual e faça upgrade quando precisar de mais canais.',

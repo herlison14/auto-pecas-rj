@@ -92,14 +92,15 @@ function NfeTab() {
     queryKey: ['nfe-settings'],
     queryFn: async () => (await api.get('/nfe/settings')).data,
   })
-  const [form, setForm] = useState<Record<string, string>>({})
+  const [form, setForm] = useState<Record<string, string | boolean>>({})
 
   const save = useMutation({
     mutationFn: async () => api.put('/nfe/settings', { ...settings, ...form }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['nfe-settings'] }),
   })
 
-  const value = (field: string, fallback = '') => form[field] ?? settings?.[field] ?? fallback
+  const value = (field: string, fallback = '') => String(form[field] ?? settings?.[field] ?? fallback)
+  const boolValue = (field: string) => Boolean(form[field] ?? settings?.[field] ?? true)
 
   const selectCls = 'flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
@@ -141,6 +142,27 @@ function NfeTab() {
             <option value="homologacao">Homologação (testes)</option>
             <option value="producao">Produção (real)</option>
           </select>
+        </div>
+
+        <div className="space-y-2 rounded-lg border p-4">
+          <p className="text-sm font-semibold">Automação</p>
+          {[
+            { field: 'autoEmit',  label: 'Emitir NF-e automaticamente', desc: 'Gera a nota assim que o pedido for confirmado e pago' },
+            { field: 'autoPrint', label: 'Imprimir DANFE automaticamente', desc: 'Abre a impressão assim que a nota for autorizada (qualquer impressora instalada: térmica, jato de tinta ou laser)' },
+          ].map(({ field, label, desc }) => (
+            <label key={field} className="flex items-start gap-3 cursor-pointer py-1">
+              <input
+                type="checkbox"
+                checked={boolValue(field)}
+                onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.checked }))}
+                className="mt-1 h-4 w-4 accent-indigo-500"
+              />
+              <span>
+                <span className="block text-sm font-medium">{label}</span>
+                <span className="block text-xs text-muted-foreground">{desc}</span>
+              </span>
+            </label>
+          ))}
         </div>
 
         <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full">

@@ -11,8 +11,10 @@ const settingsSchema = z.object({
   ie: z.string().optional(),
   razaoSocial: z.string().min(2),
   uf: z.string().length(2),
-  crt: z.number().int().min(1).max(3),
+  crt: z.coerce.number().int().min(1).max(3),
   environment: z.enum(['homologacao', 'producao']).default('homologacao'),
+  autoEmit: z.boolean().optional(),
+  autoPrint: z.boolean().optional(),
 })
 
 export async function nfeRoutes(app: FastifyInstance) {
@@ -81,6 +83,29 @@ export async function nfeRoutes(app: FastifyInstance) {
       queued: jobs.length,
       orderIds,
     })
+  })
+
+  // Fila de impressão: NF-es autorizadas que ainda não foram impressas.
+  // O frontend (AutoPrintAgent) consulta periodicamente e dispara a impressão.
+  app.get('/print-queue', async (req) => {
+    const { tenantId } = req.user as { tenantId: string }
+    return prisma.order.findMany({
+      where: { tenantId, nfeStatus: 'AUTHORIZED', nfePrintedAt: null },
+      select: { id: true, externalId: true, buyerName: true, total: true, marketplace: true },
+      orderBy: { updatedAt: 'asc' },
+      take: 10,
+    })
+  })
+
+  // Marca a NF-e do pedido como impressa (chamado após disparar a impressão)
+  app.post('/orders/:orderId/printed', async (req) => {
+    const { orderId } = req.params as { orderId: string }
+    const { tenantId } = req.user as { tenantId: string }
+    await prisma.order.updateMany({
+      where: { id: orderId, tenantId },
+      data: { nfePrintedAt: new Date() },
+    })
+    return { ok: true }
   })
 
   // Download do PDF da NF-e

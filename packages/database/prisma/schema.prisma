@@ -280,6 +280,7 @@ model Order {
   trackingCode   String?
   nfeKey         String?
   nfeStatus      NfeStatus?
+  nfePrintedAt   DateTime?
   externalData   Json        @default("{}")
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -343,6 +344,8 @@ model NfeSettings {
   environment String @default("homologacao")
   certificate String?
   certPassword String?
+  autoEmit    Boolean @default(true)
+  autoPrint   Boolean @default(true)
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 

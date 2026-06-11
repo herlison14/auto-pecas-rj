@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/ui/sidebar'
 import { QueryProvider } from '@/components/ui/query-provider'
 import { NotificationBell } from '@/components/ui/notification-bell'
 import { PageHelp } from '@/components/ui/page-help'
+import { AutoPrintAgent } from '@/components/ui/auto-print-agent'
 import { OnboardingBanner } from '@/components/ui/onboarding-banner'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 
@@ -23,6 +24,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <main className="flex-1 overflow-y-auto" style={{ background: '#080810' }}>
             <ErrorBoundary>{children}</ErrorBoundary>
           </main>
+          <AutoPrintAgent />
         </div>
       </div>
     </QueryProvider>

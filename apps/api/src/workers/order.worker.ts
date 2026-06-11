@@ -63,9 +63,19 @@ export async function processOrder(job: Job) {
       }
     }
 
-    // Auto-emit NF-e on confirmed + paid orders
-    if (order.status === 'CONFIRMED' && order.paidAt) {
-      await nfeQueue.add('emit-nfe', { orderId: order.id, tenantId: store.tenantId })
+    // Auto-emit NF-e on confirmed + paid orders (se a emissão automática
+    // estiver ligada e os dados fiscais do tenant estiverem configurados)
+    if (order.status === 'CONFIRMED' && order.paidAt && !order.nfeKey) {
+      const nfeSettings = await prisma.nfeSettings.findUnique({
+        where: { tenantId: store.tenantId },
+        select: { autoEmit: true },
+      })
+      if (nfeSettings?.autoEmit) {
+        await nfeQueue.add('emit-nfe', { orderId: order.id, tenantId: store.tenantId, action: 'emit' }, {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+        })
+      }
     }
 
     // Push notification for new orders
