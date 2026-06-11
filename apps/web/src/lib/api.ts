@@ -1,10 +1,8 @@
 import axios from 'axios'
 
-const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL
-  ?? (isLocalhost ? 'http://localhost:3001' : 'https://auto-pecas-rj.onrender.com')
-
-export const api = axios.create({ baseURL: BASE_URL })
+// Sempre same-origin: o Next faz proxy de /backend/* para a API real
+// (ver rewrites em next.config.ts). Sem CORS, sem env var no bundle.
+export const api = axios.create({ baseURL: '/backend' })
 
 api.interceptors.request.use((config) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('sellsync:token') : null

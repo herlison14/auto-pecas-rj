@@ -6,46 +6,33 @@ on:
     branches:
       - claude/upseller-platform-analysis-n10NA
     paths:
-      - '.github/workflows/diagnose.yml'
       - '.diagnose-trigger'
 
 jobs:
   diagnose:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Bundle do site aponta para qual API?
+      - name: 1. Proxy /backend/healthz via Vercel (prova build novo + proxy)
         run: |
-          echo "=== HTML da página /register ==="
-          curl -s https://herlison14-sellsync.vercel.app/register -o page.html
-          echo "Scripts encontrados:"
-          grep -o 'src="[^"]*\.js[^"]*"' page.html | head -20 || true
+          echo "=== GET https://herlison14-sellsync.vercel.app/backend/healthz ==="
+          curl -si --max-time 120 https://herlison14-sellsync.vercel.app/backend/healthz | head -20
+
+      - name: 2. Registro end-to-end via proxy
+        run: |
+          echo "=== POST /backend/auth/register via Vercel ==="
+          curl -si -X POST https://herlison14-sellsync.vercel.app/backend/auth/register \
+            -H "Content-Type: application/json" \
+            -d "{\"tenantName\":\"Probe CI\",\"name\":\"Probe\",\"email\":\"probe-$(date +%s)@example.com\",\"password\":\"Probe12345!\"}" \
+            --max-time 120 | head -40
+
+      - name: 3. API direta (Render) — healthz e registro
+        run: |
+          echo "=== GET /healthz direto ==="
+          curl -si --max-time 120 https://auto-pecas-rj.onrender.com/healthz | head -5
           echo ""
-          echo "=== Baixando chunks e procurando URLs de API ==="
-          mkdir -p chunks
-          grep -o '/_next/static/chunks/[^"]*\.js' page.html | sort -u | while read -r path; do
-            curl -s "https://herlison14-sellsync.vercel.app$path" -o "chunks/$(basename "$path")"
-          done
-          echo "--- ocorrências de localhost:3001 ---"
-          grep -l 'localhost:3001' chunks/* 2>/dev/null || echo "NENHUMA (bom sinal)"
-          echo "--- ocorrências de onrender.com ---"
-          grep -l 'onrender.com' chunks/* 2>/dev/null || echo "NENHUMA (problema! bundle não tem a URL da API)"
-          echo "--- headers do deployment ---"
-          curl -sI https://herlison14-sellsync.vercel.app/register | grep -i 'x-vercel\|age\|last-modified' || true
-
-      - name: 2. CORS preflight da API
-        run: |
-          echo "=== OPTIONS /auth/register com Origin do Vercel ==="
-          curl -si -X OPTIONS https://auto-pecas-rj.onrender.com/auth/register \
-            -H "Origin: https://herlison14-sellsync.vercel.app" \
-            -H "Access-Control-Request-Method: POST" \
-            -H "Access-Control-Request-Headers: content-type" \
-            --max-time 90 | head -30
-
-      - name: 3. POST real de registro (end-to-end)
-        run: |
-          echo "=== POST /auth/register ==="
+          echo "=== POST /auth/register direto ==="
           curl -si -X POST https://auto-pecas-rj.onrender.com/auth/register \
             -H "Origin: https://herlison14-sellsync.vercel.app" \
             -H "Content-Type: application/json" \
-            -d '{"tenantName":"Probe CI","name":"Probe","email":"probe-ci@example.com","password":"Probe12345!"}' \
-            --max-time 90 | head -40
+            -d "{\"tenantName\":\"Probe Direct\",\"name\":\"Probe\",\"email\":\"probe-direct-$(date +%s)@example.com\",\"password\":\"Probe12345!\"}" \
+            --max-time 120 | tail -5
