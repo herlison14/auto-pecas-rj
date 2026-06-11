@@ -1,0 +1,45 @@
+name: Diagnose Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Bundle do site aponta para qual API?
+        run: |
+          echo "=== HTML da página /register ==="
+          curl -s https://herlison14-sellsync.vercel.app/register -o page.html
+          echo "Scripts encontrados:"
+          grep -o 'src="[^"]*\.js[^"]*"' page.html | head -20 || true
+          echo ""
+          echo "=== Baixando chunks e procurando URLs de API ==="
+          mkdir -p chunks
+          grep -o '/_next/static/chunks/[^"]*\.js' page.html | sort -u | while read -r path; do
+            curl -s "https://herlison14-sellsync.vercel.app$path" -o "chunks/$(basename "$path")"
+          done
+          echo "--- ocorrências de localhost:3001 ---"
+          grep -l 'localhost:3001' chunks/* 2>/dev/null || echo "NENHUMA (bom sinal)"
+          echo "--- ocorrências de onrender.com ---"
+          grep -l 'onrender.com' chunks/* 2>/dev/null || echo "NENHUMA (problema! bundle não tem a URL da API)"
+          echo "--- headers do deployment ---"
+          curl -sI https://herlison14-sellsync.vercel.app/register | grep -i 'x-vercel\|age\|last-modified' || true
+
+      - name: 2. CORS preflight da API
+        run: |
+          echo "=== OPTIONS /auth/register com Origin do Vercel ==="
+          curl -si -X OPTIONS https://auto-pecas-rj.onrender.com/auth/register \
+            -H "Origin: https://herlison14-sellsync.vercel.app" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: content-type" \
+            --max-time 90 | head -30
+
+      - name: 3. POST real de registro (end-to-end)
+        run: |
+          echo "=== POST /auth/register ==="
+          curl -si -X POST https://auto-pecas-rj.onrender.com/auth/register \
+            -H "Origin: https://herlison14-sellsync.vercel.app" \
+            -H "Content-Type: application/json" \
+            -d '{"tenantName":"Probe CI","name":"Probe","email":"probe-ci@example.com","password":"Probe12345!"}' \
+            --max-time 90 | head -40
