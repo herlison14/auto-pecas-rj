@@ -60,9 +60,19 @@ async function bootstrap() {
     crossOriginEmbedderPolicy: false,
   })
 
-  const allowedOrigin = process.env.WEB_URL
-  if (!allowedOrigin) app.log.warn('WEB_URL not set — CORS is open to all origins (dev only)')
-  await app.register(cors, { origin: allowedOrigin ?? '*' })
+  const webUrl = (process.env.WEB_URL ?? '').replace(/\/+$/, '') // normaliza barra final
+  if (!webUrl) app.log.warn('WEB_URL not set — CORS restrito a *.vercel.app e localhost')
+  await app.register(cors, {
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true) // curl, healthchecks, server-to-server
+      const normalized = origin.replace(/\/+$/, '')
+      const ok =
+        (webUrl && normalized === webUrl) ||
+        /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(normalized) ||
+        /^http:\/\/localhost(:\d+)?$/.test(normalized)
+      cb(null, ok)
+    },
+  })
   await app.register(jwt, { secret: process.env.JWT_SECRET! })
   await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })
   await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } }) // 10 MB
