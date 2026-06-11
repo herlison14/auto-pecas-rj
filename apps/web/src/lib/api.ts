@@ -1,8 +1,10 @@
 import axios from 'axios'
 
-export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001',
-})
+const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL
+  ?? (isLocalhost ? 'http://localhost:3001' : 'https://auto-pecas-rj.onrender.com')
+
+export const api = axios.create({ baseURL: BASE_URL })
 
 api.interceptors.request.use((config) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('sellsync:token') : null
