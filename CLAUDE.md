@@ -303,6 +303,27 @@ Todo desenvolvimento desta sessão foi feito nesta branch. Fazer merge para `mai
 
 ---
 
+## URLs de produção
+
+| Serviço | URL |
+|---|---|
+| Frontend (Vercel) | https://herlison14-sellsync.vercel.app |
+| API (Render) | https://auto-pecas-rj.onrender.com |
+| Healthcheck | https://auto-pecas-rj.onrender.com/healthz |
+
+---
+
+## Infraestrutura gratuita
+
+| Serviço | Provedor | Observação |
+|---|---|---|
+| PostgreSQL | Neon | Serverless, região sa-east-1 |
+| Redis | Upstash | Serverless, TLS obrigatório (rediss://) |
+| API (Docker) | Render | Free tier — spin down após 15min inativo |
+| Frontend | Vercel | Deploy automático via GitHub |
+
+---
+
 ## Estado atual (junho 2026)
 
 ### Concluído
@@ -313,14 +334,17 @@ Todo desenvolvimento desta sessão foi feito nesta branch. Fazer merge para `mai
 - [x] Design dark premium (Linear-style) em todo o frontend
 - [x] Dashboard com KPIs, gráficos Recharts, top produtos
 - [x] Todas as 20+ páginas do dashboard implementadas
-- [x] Dockerfile multi-stage para Railway
+- [x] Dockerfile multi-stage (Render/Railway)
 - [x] Entrypoint com migrations automáticas
-- [x] railway.toml configurado
+- [x] API deployada no Render — `/healthz` respondendo
+- [x] Redis TLS (Upstash rediss://) configurado
+- [x] Prisma OpenSSL Alpine resolvido
+- [x] Workspace packages compilando para produção (exports field)
+- [x] Stripe lazy init (não crasha sem a key)
 
 ### Pendente
-- [ ] Deploy da API no Railway (aguardando configuração manual)
-- [ ] Configurar `NEXT_PUBLIC_API_URL` no Vercel após Railway
-- [ ] Configurar `WEB_URL` no Railway (CORS)
+- [ ] Configurar `NEXT_PUBLIC_API_URL=https://auto-pecas-rj.onrender.com` no Vercel
+- [ ] Configurar `WEB_URL=https://herlison14-sellsync.vercel.app` no Render (CORS)
 - [ ] Testar registro e login com API real
 - [ ] Conectar primeiro marketplace (Mercado Livre OAuth)
 - [ ] Configurar Stripe para billing
