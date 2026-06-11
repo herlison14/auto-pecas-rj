@@ -33,6 +33,7 @@ const MARKETPLACES = [
   { key: 'MAGALU',        name: 'Magalu',        emoji: '🟢', color: 'border-green-300 hover:bg-green-500/10',   path: '/dashboard/integrations' },
   { key: 'AMERICANAS',    name: 'Americanas',    emoji: '🔴', color: 'border-red-300 hover:bg-red-500/10',       path: '/dashboard/integrations' },
   { key: 'SHEIN',         name: 'Shein',         emoji: '⚫', color: 'border-border hover:bg-muted/30',     path: '/dashboard/integrations' },
+  { key: 'TIKTOK_SHOP',   name: 'TikTok Shop',   emoji: '🎵', color: 'border-pink-300 hover:bg-pink-500/10', path: '/dashboard/integrations' },
 ]
 
 // ── Step components ────────────────────────────────────────────────────────────
