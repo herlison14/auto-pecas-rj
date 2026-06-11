@@ -343,14 +343,26 @@ Todo desenvolvimento desta sessão foi feito nesta branch. Fazer merge para `mai
 - [x] Stripe lazy init (não crasha sem a key)
 - [x] Frontend → API via proxy same-origin `/backend/*` (rewrites no next.config.ts) — sem CORS, sem env var no bundle
 - [x] Schema do banco criado via `prisma db push` no entrypoint (projeto não tem migrations)
-- [x] Deploy automático Vercel via GitHub Actions (secret `VERCEL_TOKEN` + build remoto)
+- [x] Deploy automático Vercel via GitHub Actions (secret `VERCEL_TOKEN` + **build no CI + deploy prebuilt**)
 - [x] Registro testado end-to-end em produção (HTTP 201, contas de teste criadas)
+- [x] CSS Tailwind compilado em produção (37,9KB) — verificado por gates no CI
+- [x] Página raiz `/` redireciona para `/login` ou `/dashboard` (sem 404)
 
 ### Arquitetura de rede (importante)
 O frontend NUNCA chama a API diretamente. Toda chamada vai para `/backend/*` no
 próprio domínio e o Next.js faz proxy para o Render (rewrites). Em dev, o proxy
 aponta para `http://localhost:3001`. Isso elimina CORS e qualquer dependência de
 `NEXT_PUBLIC_API_URL` embutida no bundle.
+
+### Arquitetura de deploy do frontend (importante)
+**NUNCA usar build remoto do Vercel** — ele ignorava o `postcss.config.mjs` e
+publicava CSS cru com `@tailwind` (site inteiro sem estilo). O workflow
+`deploy-vercel.yml` compila no CI (`npm install` + `vercel build` dentro de
+`apps/web`, que é standalone com lockfile próprio) e sobe o resultado pronto
+com `vercel deploy --prebuilt --prod`. Dois gates protegem o pipeline:
+1. **Pré-deploy**: falha se o CSS do build tiver `@tailwind` cru ou não tiver
+   `.flex{display:flex}`
+2. **Pós-deploy**: baixa o CSS servido em produção e repete a verificação
 
 ### Pendente
 - [ ] Remover contas de teste da sonda (`probe-ci`, `probe-direct`)
