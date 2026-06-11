@@ -25,7 +25,26 @@ jobs:
             -d "{\"tenantName\":\"Probe CI\",\"name\":\"Probe\",\"email\":\"probe-$(date +%s)@example.com\",\"password\":\"Probe12345!\"}" \
             --max-time 120 | head -40
 
-      - name: 3. API direta (Render) — healthz e registro
+      - name: 3. CSS compilado em produção
+        run: |
+          echo "=== Procurando link de CSS na página /login ==="
+          curl -s https://herlison14-sellsync.vercel.app/login -o page.html
+          CSS_PATH=$(grep -o '/_next/static/css/[^"]*\.css' page.html | head -1)
+          echo "CSS: $CSS_PATH"
+          if [ -z "$CSS_PATH" ]; then
+            echo "::error::Nenhum arquivo CSS no HTML — Tailwind não compilou!"
+            exit 1
+          fi
+          echo "=== Conteúdo (primeiros 200 chars) ==="
+          curl -s "https://herlison14-sellsync.vercel.app$CSS_PATH" | head -c 200
+          echo ""
+          if curl -s "https://herlison14-sellsync.vercel.app$CSS_PATH" | grep -q '@tailwind'; then
+            echo "::error::CSS cru com @tailwind — PostCSS não processou!"
+            exit 1
+          fi
+          echo "✅ CSS compilado corretamente"
+
+      - name: 4. API direta (Render) — healthz e registro
         run: |
           echo "=== GET /healthz direto ==="
           curl -si --max-time 120 https://auto-pecas-rj.onrender.com/healthz | head -5
