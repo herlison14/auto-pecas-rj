@@ -86,7 +86,7 @@ function RevenueTooltip({ active, payload, label }: any) {
     <div className="rounded-lg border bg-card shadow-lg px-3 py-2.5 text-xs">
       <p className="font-semibold text-muted-foreground mb-1">{label}</p>
       <p className="font-bold text-base">{fmtCurrency(payload[0]?.value ?? 0)}</p>
-      <p className="text-muted-foreground">{payload[1]?.value ?? 0} pedidos</p>
+      <p className="text-muted-foreground">{payload[0]?.payload?.orders ?? 0} pedidos</p>
     </div>
   )
 }
@@ -238,11 +238,6 @@ export default function DashboardPage() {
                     type="monotone" dataKey="revenue" stroke="hsl(var(--primary))"
                     strokeWidth={2} fill="url(#grad)" dot={false} activeDot={{ r: 4 }}
                   />
-                  <Area
-                    type="monotone" dataKey="orders" stroke="hsl(var(--muted-foreground))"
-                    strokeWidth={1.5} fill="transparent" dot={false} strokeDasharray="4 2"
-                    yAxisId={1} hide
-                  />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -352,9 +347,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               {[
-                { href: '/dashboard/orders',       label: 'Pedidos pendentes',  desc: `${extras?.pendingOrders ?? 0} aguardando`, color: 'hover:bg-amber-500/10/10' },
-                { href: '/dashboard/inventory',    label: 'Estoque baixo',      desc: `${extras?.lowStockCount ?? 0} produtos`, color: 'hover:bg-red-500/10/10' },
-                { href: '/dashboard/integrations', label: 'Canais ativos',      desc: `${extras?.connectedStores ?? 0} conectados`, color: 'hover:bg-blue-500/10/10' },
+                { href: '/dashboard/orders',       label: 'Pedidos pendentes',  desc: `${extras?.pendingOrders ?? 0} aguardando`, color: 'hover:bg-amber-500/10' },
+                { href: '/dashboard/inventory',    label: 'Estoque baixo',      desc: `${extras?.lowStockCount ?? 0} produtos`, color: 'hover:bg-red-500/10' },
+                { href: '/dashboard/integrations', label: 'Canais ativos',      desc: `${extras?.connectedStores ?? 0} conectados`, color: 'hover:bg-blue-500/10' },
                 { href: '/dashboard/catalog',      label: 'Sync catálogo',      desc: 'Verificar divergências', color: 'hover:bg-violet-500/10' },
               ].map(({ href, label, desc, color }) => (
                 <Link key={href} href={href}
