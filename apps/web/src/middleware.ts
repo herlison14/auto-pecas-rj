@@ -18,6 +18,11 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
+  // Authenticated user at root → dashboard
+  if (pathname === '/' && token) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
   return NextResponse.next()
 }
 

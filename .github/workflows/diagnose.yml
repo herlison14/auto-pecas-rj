@@ -35,14 +35,24 @@ jobs:
             echo "::error::Nenhum arquivo CSS no HTML — Tailwind não compilou!"
             exit 1
           fi
-          echo "=== Conteúdo (primeiros 200 chars) ==="
-          curl -s "https://herlison14-sellsync.vercel.app$CSS_PATH" | head -c 200
+          # Pega apenas os primeiros 2KB do CSS (antes dos source maps)
+          CSS_HEAD=$(curl -s "https://herlison14-sellsync.vercel.app$CSS_PATH" | head -c 2048)
+          echo "=== Primeiros 200 chars ==="
+          echo "$CSS_HEAD" | head -c 200
           echo ""
-          if curl -s "https://herlison14-sellsync.vercel.app$CSS_PATH" | grep -q '@tailwind'; then
+          # CSS compilado começa com @font-face ou regras CSS válidas, nunca com @tailwind
+          if echo "$CSS_HEAD" | grep -q '^@tailwind'; then
             echo "::error::CSS cru com @tailwind — PostCSS não processou!"
             exit 1
           fi
-          echo "✅ CSS compilado corretamente"
+          # Verifica que tem conteúdo CSS real (pelo menos 500 bytes)
+          CSS_SIZE=$(curl -s "https://herlison14-sellsync.vercel.app$CSS_PATH" | wc -c)
+          echo "Tamanho do CSS: $CSS_SIZE bytes"
+          if [ "$CSS_SIZE" -lt 500 ]; then
+            echo "::error::CSS muito pequeno ($CSS_SIZE bytes) — Tailwind provavelmente não compilou!"
+            exit 1
+          fi
+          echo "✅ CSS compilado corretamente ($CSS_SIZE bytes)"
 
       - name: 4. API direta (Render) — healthz e registro
         run: |
