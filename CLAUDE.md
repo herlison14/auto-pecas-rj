@@ -341,11 +341,19 @@ Todo desenvolvimento desta sessão foi feito nesta branch. Fazer merge para `mai
 - [x] Prisma OpenSSL Alpine resolvido
 - [x] Workspace packages compilando para produção (exports field)
 - [x] Stripe lazy init (não crasha sem a key)
-- [x] `NEXT_PUBLIC_API_URL=https://auto-pecas-rj.onrender.com` configurado no Vercel
-- [x] `WEB_URL=https://herlison14-sellsync.vercel.app` configurado no Render (CORS)
+- [x] Frontend → API via proxy same-origin `/backend/*` (rewrites no next.config.ts) — sem CORS, sem env var no bundle
+- [x] Schema do banco criado via `prisma db push` no entrypoint (projeto não tem migrations)
+- [x] Deploy automático Vercel via GitHub Actions (secret `VERCEL_TOKEN` + build remoto)
+- [x] Registro testado end-to-end em produção (HTTP 201, contas de teste criadas)
+
+### Arquitetura de rede (importante)
+O frontend NUNCA chama a API diretamente. Toda chamada vai para `/backend/*` no
+próprio domínio e o Next.js faz proxy para o Render (rewrites). Em dev, o proxy
+aponta para `http://localhost:3001`. Isso elimina CORS e qualquer dependência de
+`NEXT_PUBLIC_API_URL` embutida no bundle.
 
 ### Pendente
-- [ ] Testar registro e login com API real
+- [ ] Remover contas de teste da sonda (`probe-ci`, `probe-direct`)
 - [ ] Conectar primeiro marketplace (Mercado Livre OAuth)
 - [ ] Configurar Stripe para billing
 - [ ] Configurar NFe.io para emissão de notas
