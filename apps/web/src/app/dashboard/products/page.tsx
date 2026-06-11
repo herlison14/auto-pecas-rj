@@ -27,7 +27,7 @@ export default function ProductsPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" asChild>
-            <a href="/templates/products-template.csv" download>
+            <a href="/templates/products-template.xlsx" download>
               <Download className="h-4 w-4" /> Modelo de planilha
             </a>
           </Button>

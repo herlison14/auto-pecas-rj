@@ -28,16 +28,25 @@ function toNum(v: unknown): number | undefined {
   return isNaN(n) || v === '' || v == null ? undefined : n
 }
 
-export async function parseSpreadsheet(buffer: Buffer, mimetype: string): Promise<ImportRow[]> {
+export async function parseSpreadsheet(buffer: Buffer, _mimetype: string): Promise<ImportRow[]> {
   let rawRows: Record<string, unknown>[]
 
-  if (mimetype === 'text/csv' || (mimetype === 'application/octet-stream' && !buffer.slice(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04])))) {
-    // CSV: split lines
-    const text = buffer.toString('utf8')
+  // Detecta o formato pelos magic bytes (PK = ZIP/XLSX), não pelo mimetype:
+  // o Excel envia CSVs como application/vnd.ms-excel.
+  const isXlsx = buffer.slice(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]))
+
+  if (!isXlsx) {
+    // CSV: remove BOM e auto-detecta o separador — Excel pt-BR salva com ";"
+    const text = buffer.toString('utf8').replace(/^\uFEFF/, '')
     const lines = text.split(/\r?\n/).filter(Boolean)
-    const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''))
+    if (lines.length === 0) return []
+    const headerLine = lines[0]
+    const delimiter = [';', ',', '\t']
+      .map((d) => ({ d, count: headerLine.split(d).length - 1 }))
+      .sort((a, b) => b.count - a.count)[0].d
+    const headers = headerLine.split(delimiter).map((h) => h.trim().replace(/^"|"$/g, ''))
     rawRows = lines.slice(1).map((line) => {
-      const vals = line.split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
+      const vals = line.split(delimiter).map((v) => v.trim().replace(/^"|"$/g, ''))
       return Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? '']))
     })
   } else {

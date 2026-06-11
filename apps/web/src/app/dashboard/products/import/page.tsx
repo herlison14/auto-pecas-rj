@@ -89,13 +89,22 @@ export default function ImportProductsPage() {
           <li>Faça upload do arquivo CSV ou XLSX</li>
           <li>Revise a pré-visualização e confirme a importação</li>
         </ol>
-        <a
-          href="/templates/products-template.csv"
-          download
-          className="inline-flex items-center gap-1 mt-2 text-blue-400 font-semibold hover:underline"
-        >
-          ↓ Baixar modelo CSV
-        </a>
+        <div className="flex gap-4 mt-2">
+          <a
+            href="/templates/products-template.xlsx"
+            download
+            className="inline-flex items-center gap-1 text-blue-400 font-semibold hover:underline"
+          >
+            ↓ Baixar modelo Excel (recomendado)
+          </a>
+          <a
+            href="/templates/products-template.csv"
+            download
+            className="inline-flex items-center gap-1 text-blue-400/70 hover:underline"
+          >
+            ↓ Baixar modelo CSV
+          </a>
+        </div>
       </div>
 
       {/* Colunas aceitas */}
