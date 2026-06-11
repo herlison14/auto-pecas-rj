@@ -75,6 +75,24 @@ async function bootstrap() {
   })
   await app.register(jwt, { secret: process.env.JWT_SECRET! })
   await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })
+
+  // Observabilidade: Sentry opcional — só inicializa se SENTRY_DSN estiver definido
+  if (process.env.SENTRY_DSN) {
+    const Sentry = await import('@sentry/node')
+    Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV ?? 'development' })
+    app.setErrorHandler((err: Error & { statusCode?: number }, req, reply) => {
+      if (!err.statusCode || err.statusCode >= 500) {
+        Sentry.captureException(err, { extra: { url: req.url, method: req.method } })
+      }
+      app.log.error(err)
+      const status = err.statusCode ?? 500
+      reply.code(status).send({
+        error: err.name ?? 'InternalServerError',
+        message: status >= 500 ? 'Erro interno do servidor' : err.message,
+      })
+    })
+    app.log.info('Sentry inicializado')
+  }
   await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } }) // 10 MB
 
   // Shared auth decorator — all routes using app.authenticate go through this

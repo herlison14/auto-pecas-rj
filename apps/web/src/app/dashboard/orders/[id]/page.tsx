@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ArrowLeft, Package, MapPin, FileText, Truck, RefreshCw, Printer, Download } from 'lucide-react'
 import { api } from '@/lib/api'
-import { printDanfe } from '@/components/ui/auto-print-agent'
+import { printDanfe, printShippingLabel } from '@/components/ui/auto-print-agent'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -57,6 +57,8 @@ export default function OrderDetailPage() {
   })
 
   const [printing, setPrinting] = useState(false)
+  const [printingLabel, setPrintingLabel] = useState(false)
+  const [labelError, setLabelError] = useState('')
 
   async function handlePrint() {
     setPrinting(true)
@@ -65,6 +67,26 @@ export default function OrderDetailPage() {
       await api.post(`/nfe/orders/${id}/printed`)
     } finally {
       setPrinting(false)
+    }
+  }
+
+  async function handlePrintLabel() {
+    setPrintingLabel(true)
+    setLabelError('')
+    try {
+      await printShippingLabel(id)
+    } catch (err: any) {
+      // erro vem como Blob quando responseType é blob — extrai a mensagem
+      let msg = 'Erro ao buscar a etiqueta'
+      const data = err?.response?.data
+      if (data instanceof Blob) {
+        try { msg = JSON.parse(await data.text()).message ?? msg } catch { /* mantém genérica */ }
+      } else if (data?.message) {
+        msg = data.message
+      }
+      setLabelError(msg)
+    } finally {
+      setPrintingLabel(false)
     }
   }
 
@@ -114,6 +136,11 @@ export default function OrderDetailPage() {
               <Truck className="h-4 w-4" /> {markShipped.isPending ? 'Processando...' : 'Marcar como enviado'}
             </Button>
           )}
+          {order.marketplace === 'MERCADO_LIVRE' && ['CONFIRMED', 'SHIPPED'].includes(order.status) && (
+            <Button size="sm" variant="outline" onClick={() => handlePrintLabel()} disabled={printingLabel}>
+              <Truck className="h-4 w-4" /> {printingLabel ? 'Buscando...' : 'Imprimir etiqueta'}
+            </Button>
+          )}
           {order.nfeStatus !== 'AUTHORIZED' && order.nfeStatus !== 'PENDING' && order.status === 'CONFIRMED' && (
             <Button size="sm" onClick={() => emitNfe.mutate()} disabled={emitNfe.isPending}>
               <FileText className="h-4 w-4" /> {emitNfe.isPending ? 'Emitindo...' : 'Emitir NF-e'}
@@ -126,6 +153,12 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {labelError && (
+        <div className="rounded-lg px-4 py-3 text-sm" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', color: '#fbbf24' }}>
+          {labelError}
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Itens do pedido */}

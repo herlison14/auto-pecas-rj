@@ -113,4 +113,51 @@ export async function authRoutes(app: FastifyInstance) {
     await prisma.tenant.update({ where: { id: tenantId }, data: { onboardingCompletedAt: new Date() } })
     return reply.code(204).send()
   })
+
+  // ─── Recuperação de senha ──────────────────────────────────────────────────
+  // Token JWT stateless de 30min com purpose dedicado — sem tabela extra.
+
+  app.post('/forgot-password', { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } }, async (req, reply) => {
+    const { email } = z.object({ email: z.string().email() }).parse(req.body)
+
+    const user = await prisma.user.findUnique({ where: { email } })
+    // Resposta idêntica com ou sem usuário — evita enumeração de e-mails
+    if (user) {
+      const token = app.jwt.sign({ userId: user.id, purpose: 'pwreset' }, { expiresIn: '30m' })
+      const webUrl = (process.env.WEB_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
+      const resetUrl = `${webUrl}/reset-password?token=${token}`
+
+      const { sendPasswordResetEmail } = await import('../services/email.service')
+      try {
+        await sendPasswordResetEmail(user.tenantId, user.email, user.name, resetUrl)
+      } catch (err) {
+        // Sem provedor de e-mail configurado: registra a URL no log do servidor
+        app.log.warn({ resetUrl, email }, 'Falha ao enviar e-mail de reset — URL disponível no log')
+      }
+    }
+
+    return { message: 'Se o e-mail existir, enviamos as instruções de recuperação.' }
+  })
+
+  app.post('/reset-password', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (req, reply) => {
+    const { token, password } = z.object({
+      token: z.string().min(10),
+      password: z.string().min(8),
+    }).parse(req.body)
+
+    let payload: { userId: string; purpose?: string }
+    try {
+      payload = app.jwt.verify(token)
+    } catch {
+      return reply.code(400).send({ message: 'Link inválido ou expirado. Solicite um novo.' })
+    }
+    if (payload.purpose !== 'pwreset') {
+      return reply.code(400).send({ message: 'Link inválido ou expirado. Solicite um novo.' })
+    }
+
+    const passwordHash = await hashPassword(password)
+    await prisma.user.update({ where: { id: payload.userId }, data: { passwordHash } })
+
+    return { message: 'Senha alterada com sucesso. Faça login com a nova senha.' }
+  })
 }

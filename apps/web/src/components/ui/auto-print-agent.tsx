@@ -89,7 +89,17 @@ export function AutoPrintAgent() {
 
 /** Baixa o PDF da DANFE autenticado e abre o diálogo de impressão do sistema. */
 export async function printDanfe(orderId: string): Promise<void> {
-  const res = await api.get(`/nfe/orders/${orderId}/pdf`, { responseType: 'blob' })
+  return printPdfFromApi(`/nfe/orders/${orderId}/pdf`)
+}
+
+/** Baixa a etiqueta de envio do pedido e abre o diálogo de impressão. */
+export async function printShippingLabel(orderId: string): Promise<void> {
+  return printPdfFromApi(`/orders/${orderId}/label`)
+}
+
+/** Busca um PDF autenticado na API e abre o diálogo de impressão do sistema. */
+export async function printPdfFromApi(path: string): Promise<void> {
+  const res = await api.get(path, { responseType: 'blob' })
   const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
 
   await new Promise<void>((resolve, reject) => {

@@ -164,6 +164,12 @@ export default function LoginPage() {
             </div>
           </Field>
 
+          <div className="flex justify-end -mt-1">
+            <Link href="/forgot-password" className="text-xs font-medium" style={{ color: '#64748b' }}>
+              Esqueci minha senha
+            </Link>
+          </div>
+
           <PrimaryButton disabled={loading} className="mt-2">
             {loading
               ? <span className="flex items-center gap-2 justify-center"><Spinner />Entrando...</span>

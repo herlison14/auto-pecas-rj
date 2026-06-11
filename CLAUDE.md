@@ -364,8 +364,23 @@ com `vercel deploy --prebuilt --prod`. Dois gates protegem o pipeline:
    `.flex{display:flex}`
 2. **Pós-deploy**: baixa o CSS servido em produção e repete a verificação
 
-### Pendente
-- [ ] Remover contas de teste da sonda (`probe-ci`, `probe-direct`)
-- [ ] Conectar primeiro marketplace (Mercado Livre OAuth)
+### Concluído (sessão de melhorias — jun/2026)
+- [x] NF-e automática ao confirmar pedido + impressão automática da DANFE (AutoPrintAgent)
+- [x] Etiqueta de envio do Mercado Livre (individual + lote) com impressão
+- [x] Recuperação de senha (token JWT 30min, e-mail via Resend global `RESEND_API_KEY` ou do tenant; sem provedor, URL vai pro log)
+- [x] Limites de plano aplicados (lojas em integrações, usuários em convites → HTTP 402)
+- [x] Sentry opcional na API (ativa com `SENTRY_DSN`)
+- [x] Guarda de multi-tenancy no Prisma (warn em operações bulk sem tenantId)
+- [x] Testes vitest (15) + workflow CI `test.yml` (typecheck + testes a cada push)
+- [x] Planilha modelo em PT (XLSX + CSV `;`/BOM) e parser tolerante (acentos, caixa, decimal vírgula)
+- [x] Ajuda contextual "?" em todas as abas; conexão manual de marketplace; TikTok Shop
+
+### Pendente (críticos — próxima sessão)
+- [ ] Renovação automática de tokens dos marketplaces (ML expira em ~6h)
+- [ ] Workers fora do free tier do Render (hibernação mata BullMQ)
+- [ ] Criptografar accessToken das lojas no banco
+- [ ] Migrar de `prisma db push` para migrations versionadas
+- [ ] Revogar token Vercel exposto no chat + remover contas `probe-*`
+- [ ] Conectar primeiro marketplace (Mercado Livre OAuth — requer app em developers.mercadolivre.com.br)
 - [ ] Configurar Stripe para billing
 - [ ] Configurar NFe.io para emissão de notas

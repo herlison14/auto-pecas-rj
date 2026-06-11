@@ -79,6 +79,14 @@ export async function teamRoutes(app: FastifyInstance) {
       role: z.enum(['ADMIN', 'OPERATOR']),
     }).parse(req.body)
 
+    const { assertPlanLimit, PlanLimitError } = await import('../services/billing.service')
+    try {
+      await assertPlanLimit(tenantId, 'users')
+    } catch (err) {
+      if (err instanceof PlanLimitError) return reply.status(402).send({ error: 'PLAN_LIMIT', message: err.message })
+      throw err
+    }
+
     // Check not already a member
     const existing = await prisma.user.findFirst({ where: { tenantId, email } })
     if (existing) return reply.status(409).send({ error: 'Este e-mail já é membro da equipe' })

@@ -32,6 +32,35 @@ export const PLANS = {
 
 export type PlanKey = keyof typeof PLANS
 
+export class PlanLimitError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'PlanLimitError'
+  }
+}
+
+/**
+ * Verifica o limite do plano para um recurso. Lança PlanLimitError com
+ * mensagem amigável quando atingido — o chamador converte em HTTP 402.
+ */
+export async function assertPlanLimit(tenantId: string, resource: 'stores' | 'users') {
+  const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { plan: true } })
+  const plan = PLANS[tenant.plan as PlanKey] ?? PLANS.FREE
+  const limit = plan.limits[resource]
+  if (limit === -1) return
+
+  const count = resource === 'stores'
+    ? await prisma.store.count({ where: { tenantId, isActive: true } })
+    : await prisma.user.count({ where: { tenantId } })
+
+  if (count >= limit) {
+    const label = resource === 'stores' ? 'lojas conectadas' : 'usuários'
+    throw new PlanLimitError(
+      `Limite de ${limit} ${label} do plano ${plan.name} atingido. Faça upgrade em Configurações → Plano para adicionar mais.`,
+    )
+  }
+}
+
 export class BillingService {
   async createCheckoutSession(tenantId: string, plan: PlanKey, successUrl: string, cancelUrl: string) {
     const priceId = PLANS[plan].priceId

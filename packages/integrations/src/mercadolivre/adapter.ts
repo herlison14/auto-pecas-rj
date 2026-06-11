@@ -73,4 +73,22 @@ export class MercadoLivreAdapter implements IMarketplaceAdapter {
       service_id: carrier,
     })
   }
+
+  /** Baixa a etiqueta de envio (PDF) do pedido — Mercado Envios. */
+  async getShippingLabelPdf(orderId: string): Promise<Buffer> {
+    const { data: order } = await this.http.get(`/orders/${orderId}`)
+    const shipmentId = order.shipping?.id
+    if (!shipmentId) throw new Error('Pedido sem envio associado (Mercado Envios)')
+
+    return this.getShippingLabelsPdf([String(shipmentId)])
+  }
+
+  /** Etiquetas em lote: a API do ML aceita vários shipment_ids e devolve um único PDF. */
+  async getShippingLabelsPdf(shipmentIds: string[]): Promise<Buffer> {
+    const { data } = await this.http.get('/shipment_labels', {
+      params: { shipment_ids: shipmentIds.join(','), response_type: 'pdf' },
+      responseType: 'arraybuffer',
+    })
+    return Buffer.from(data)
+  }
 }

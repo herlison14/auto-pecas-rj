@@ -35,6 +35,42 @@ function baseTemplate(title: string, body: string, ctaUrl?: string, ctaLabel?: s
 </body></html>`
 }
 
+/**
+ * E-mail de plataforma (reset de senha): usa RESEND_API_KEY global do servidor;
+ * se ausente, tenta o provedor configurado pelo tenant; se nada, lança erro
+ * (o chamador registra a URL no log como fallback).
+ */
+export async function sendPasswordResetEmail(tenantId: string, to: string, name: string, resetUrl: string) {
+  const payload: EmailPayload = {
+    to,
+    subject: 'Redefinição de senha — SellSync',
+    html: baseTemplate(
+      `Olá, ${name}`,
+      `<p style="color:#374151;font-size:14px">Recebemos um pedido para redefinir a senha da sua conta.
+       Clique no botão abaixo para criar uma nova senha. O link vale por 30 minutos.</p>
+       <p style="color:#9CA3AF;font-size:12px">Se você não pediu a redefinição, ignore este e-mail — sua senha continua a mesma.</p>`,
+      resetUrl,
+      'Redefinir senha',
+    ),
+  }
+
+  const globalKey = process.env.RESEND_API_KEY
+  if (globalKey) {
+    const from = process.env.EMAIL_FROM ?? 'SellSync <noreply@sellsync.app>'
+    await sendViaResend(globalKey, from, payload)
+    return
+  }
+
+  const settings = await prisma.emailSettings.findUnique({ where: { tenantId } })
+  if (settings?.provider === 'resend' && settings.resendApiKey) {
+    const from = `${settings.fromName ?? 'SellSync'} <${settings.fromEmail ?? 'noreply@sellsync.app'}>`
+    await sendViaResend(settings.resendApiKey, from, payload)
+    return
+  }
+
+  throw new Error('Nenhum provedor de e-mail configurado')
+}
+
 export async function sendEmailNotification(tenantId: string, payload: EmailPayload) {
   const settings = await prisma.emailSettings.findUnique({ where: { tenantId } })
   if (!settings) return

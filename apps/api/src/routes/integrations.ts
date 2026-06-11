@@ -3,6 +3,7 @@ import axios from 'axios'
 import { prisma } from '@sellsync/database'
 import { z } from 'zod'
 import { checkAllStoresHealth, checkStoreHealth } from '../services/health.service'
+import { assertPlanLimit, PlanLimitError } from '../services/billing.service'
 
 const MARKETPLACES = [
   'MERCADO_LIVRE', 'SHOPEE', 'AMAZON', 'MAGALU',
@@ -18,6 +19,13 @@ export async function integrationsRoutes(app: FastifyInstance) {
     await req.jwtVerify()
     const { tenantId } = req.user as { tenantId: string }
     const { slug } = req.params as { slug: string }
+
+    try {
+      await assertPlanLimit(tenantId, 'stores')
+    } catch (err) {
+      if (err instanceof PlanLimitError) return reply.code(402).send({ error: 'PLAN_LIMIT', message: err.message })
+      throw err
+    }
 
     if (slug === 'mercadolivre') {
       if (!process.env.ML_APP_ID || !process.env.ML_REDIRECT_URI) {
@@ -72,6 +80,13 @@ export async function integrationsRoutes(app: FastifyInstance) {
   app.post('/manual', async (req, reply) => {
     await req.jwtVerify()
     const { tenantId } = req.user as { tenantId: string }
+
+    try {
+      await assertPlanLimit(tenantId, 'stores')
+    } catch (err) {
+      if (err instanceof PlanLimitError) return reply.code(402).send({ error: 'PLAN_LIMIT', message: err.message })
+      throw err
+    }
 
     const body = z.object({
       marketplace: z.enum(MARKETPLACES),
