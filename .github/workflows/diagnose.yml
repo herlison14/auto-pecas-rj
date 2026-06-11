@@ -2,6 +2,12 @@ name: Diagnose Production
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - claude/upseller-platform-analysis-n10NA
+    paths:
+      - '.github/workflows/diagnose.yml'
+      - '.diagnose-trigger'
 
 jobs:
   diagnose:
