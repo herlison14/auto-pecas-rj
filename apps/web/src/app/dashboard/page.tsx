@@ -154,6 +154,8 @@ export default function DashboardPage() {
           <div className="flex gap-1 rounded-lg border bg-muted/60 p-1">
             {PERIODS.map((p) => (
               <button key={p.days} onClick={() => setDays(p.days)}
+                aria-label={`Últimos ${p.days} dias`}
+                aria-pressed={days === p.days}
                 className={cn('rounded-md px-3 py-1 text-xs font-semibold transition-all',
                   days === p.days ? 'bg-card shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
                 {p.label}
@@ -311,11 +313,12 @@ export default function DashboardPage() {
                 Sem vendas no período
               </div>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/30">
                   <tr>
                     {['#', 'Produto', 'Qtd', 'Receita'].map((h) => (
-                      <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">{h}</th>
+                      <th key={h} scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -335,6 +338,7 @@ export default function DashboardPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </CardContent>
         </Card>

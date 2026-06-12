@@ -80,12 +80,12 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-5">
+      <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto px-2 py-4 space-y-5">
         {NAV_SECTIONS.map(({ label, items }) => (
           <div key={label}>
             <p
               className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest"
-              style={{ color: '#1e293b' }}
+              style={{ color: '#334155' }}
             >
               {label}
             </p>
@@ -104,7 +104,7 @@ export function Sidebar() {
                       border: '1px solid rgba(99,102,241,0.25)',
                       color: '#a5b4fc',
                     } : {
-                      color: '#475569',
+                      color: '#64748b',
                       border: '1px solid transparent',
                     }}
                     onMouseEnter={(e) => {
@@ -116,7 +116,7 @@ export function Sidebar() {
                     onMouseLeave={(e) => {
                       if (!active) {
                         (e.currentTarget as HTMLElement).style.background = 'transparent'
-                        ;(e.currentTarget as HTMLElement).style.color = '#475569'
+                        ;(e.currentTarget as HTMLElement).style.color = '#64748b'
                       }
                     }}
                   >
