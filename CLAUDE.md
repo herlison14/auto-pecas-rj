@@ -224,7 +224,8 @@ Inicializados em `startWorkers()` chamado no bootstrap da API.
 | `ML_APP_ID` / `ML_CLIENT_SECRET` | Não | Mercado Livre OAuth |
 | `SHOPEE_PARTNER_ID` / `SHOPEE_PARTNER_KEY` | Não | Shopee |
 | `AMAZON_CLIENT_ID` / `AMAZON_CLIENT_SECRET` | Não | Amazon SP-API |
-| `STRIPE_SECRET_KEY` | Não | Billing |
+| `ASAAS_API_KEY` | **Sim** (billing) | Chave da API Asaas (`$aact_...`) |
+| `ASAAS_SANDBOX` | Não (default `false`) | `true` para sandbox/testes |
 | `NFEIO_API_KEY` / `NFEIO_COMPANY_ID` | Não | NF-e |
 
 ### Frontend (`apps/web`)
@@ -340,7 +341,7 @@ Todo desenvolvimento desta sessão foi feito nesta branch. Fazer merge para `mai
 - [x] Redis TLS (Upstash rediss://) configurado
 - [x] Prisma OpenSSL Alpine resolvido
 - [x] Workspace packages compilando para produção (exports field)
-- [x] Stripe lazy init (não crasha sem a key)
+- [x] Asaas billing integrado (substituiu Stripe)
 - [x] Frontend → API via proxy same-origin `/backend/*` (rewrites no next.config.ts) — sem CORS, sem env var no bundle
 - [x] Schema do banco criado via `prisma db push` no entrypoint (projeto não tem migrations)
 - [x] Deploy automático Vercel via GitHub Actions (secret `VERCEL_TOKEN` + **build no CI + deploy prebuilt**)
@@ -375,12 +376,35 @@ com `vercel deploy --prebuilt --prod`. Dois gates protegem o pipeline:
 - [x] Planilha modelo em PT (XLSX + CSV `;`/BOM) e parser tolerante (acentos, caixa, decimal vírgula)
 - [x] Ajuda contextual "?" em todas as abas; conexão manual de marketplace; TikTok Shop
 
+### Concluído (sessão de billing + observabilidade — jun/2026)
+- [x] Sentry integrado no frontend (Next.js 15): `instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`, `instrumentation.ts`, `global-error.tsx`
+- [x] Sentry integrado na API (Fastify): `instrument.ts` ESM-first, `setupFastifyErrorHandler`, workers BullMQ reportam falhas, graceful shutdown com `Sentry.flush()`
+- [x] User context no Sentry: `setUser` após `/auth/me`, `setUser(null)` no logout, tags `tenant_id` e `plan`
+- [x] Sistema de pagamento Asaas implementado (substituiu Stripe): cliente tipado `lib/asaas.ts`, `billing.service.ts` reescrito, `GET /billing/plan`, `POST /billing/checkout`, `POST /billing/cancel`, `POST /billing/webhook`
+- [x] Schema Prisma: `asaasCustomerId` e `asaasSubscriptionId` adicionados ao Tenant
+- [x] PlanTab redesenhado: status badge (ACTIVE/OVERDUE/INACTIVE), alerta de pagamento em atraso, botão cancelar, chips PIX/Boleto/Cartão, cards dark premium
+- [x] Acessibilidade WCAG 2.2 AA: skip nav, aria-labels, roles, contraste sidebar/login
+- [x] UserMenu no header: avatar com iniciais, badge de plano, dropdown com logout
+- [x] ErrorBoundary reporta para Sentry via `componentDidCatch`
+
 ### Pendente (críticos — próxima sessão)
+- [ ] **Configurar `ASAAS_API_KEY` no Render** (dashboard.render.com → serviço → Environment)
+- [ ] **Configurar webhook Asaas**: URL `https://auto-pecas-rj.onrender.com/billing/webhook` no painel sandbox.asaas.com → Configurações → Webhooks
 - [ ] Renovação automática de tokens dos marketplaces (ML expira em ~6h)
 - [ ] Workers fora do free tier do Render (hibernação mata BullMQ)
 - [ ] Criptografar accessToken das lojas no banco
 - [ ] Migrar de `prisma db push` para migrations versionadas
 - [ ] Revogar token Vercel exposto no chat + remover contas `probe-*`
 - [ ] Conectar primeiro marketplace (Mercado Livre OAuth — requer app em developers.mercadolivre.com.br)
-- [ ] Configurar Stripe para billing
 - [ ] Configurar NFe.io para emissão de notas
+
+### Asaas — configuração necessária
+```
+Render (dashboard.render.com → auto-pecas-rj → Environment):
+  ASAAS_API_KEY = $aact_...       ← sua chave do painel Asaas
+  ASAAS_SANDBOX = false           ← true para testes
+
+Asaas (sandbox.asaas.com → Configurações → Webhooks):
+  URL: https://auto-pecas-rj.onrender.com/billing/webhook
+  Eventos: PAYMENT_RECEIVED, PAYMENT_CONFIRMED, SUBSCRIPTION_DELETED
+```
