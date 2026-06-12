@@ -1,4 +1,6 @@
 # SellSync — Hub Multichannel
+> **Também chamado de**: "projeto Upseller", "auto-pecas-rj" (nome do repo), "SellSync"
+> **Branch de trabalho**: `claude/upseller-platform-analysis-n10NA`
 
 ## O que é este projeto
 
