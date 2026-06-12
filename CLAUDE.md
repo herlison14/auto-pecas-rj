@@ -23,7 +23,7 @@ Monorepo Turborepo com:
 | Banco | PostgreSQL via Prisma ORM |
 | Cache/Filas | Redis + BullMQ |
 | Auth | JWT (7 dias), TOTP 2FA opcional |
-| Billing | Stripe (FREE / STARTER / GROWTH / PRO) |
+| Billing | Asaas (FREE / STARTER / GROWTH / PRO) |
 | NF-e | NFe.io API |
 | Deploy web | Vercel |
 | Deploy api | Railway (Docker) |

@@ -1,32 +1,26 @@
-import Stripe from 'stripe'
 import { prisma } from '@sellsync/database'
-
-function getStripe() {
-  const key = process.env.STRIPE_SECRET_KEY
-  if (!key) throw new Error('Stripe not configured (STRIPE_SECRET_KEY missing)')
-  return new Stripe(key, { apiVersion: '2025-02-24.acacia' })
-}
+import { asaas } from '../lib/asaas'
 
 export const PLANS = {
   FREE: {
     name: 'Free',
-    priceId: null,
+    price: 0,
     limits: { orders: 100, stores: 2, users: 1 },
   },
   STARTER: {
     name: 'Starter',
-    priceId: process.env.STRIPE_PRICE_STARTER,
+    price: 79.00,
     limits: { orders: 1000, stores: 5, users: 3 },
   },
   GROWTH: {
     name: 'Growth',
-    priceId: process.env.STRIPE_PRICE_GROWTH,
+    price: 199.00,
     limits: { orders: 10000, stores: 15, users: 10 },
   },
   PRO: {
     name: 'Pro',
-    priceId: process.env.STRIPE_PRICE_PRO,
-    limits: { orders: -1, stores: -1, users: -1 }, // -1 = ilimitado
+    price: 399.00,
+    limits: { orders: -1, stores: -1, users: -1 },
   },
 } as const
 
@@ -39,10 +33,6 @@ export class PlanLimitError extends Error {
   }
 }
 
-/**
- * Verifica o limite do plano para um recurso. Lança PlanLimitError com
- * mensagem amigável quando atingido — o chamador converte em HTTP 402.
- */
 export async function assertPlanLimit(tenantId: string, resource: 'stores' | 'users') {
   const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { plan: true } })
   const plan = PLANS[tenant.plan as PlanKey] ?? PLANS.FREE
@@ -62,64 +52,126 @@ export async function assertPlanLimit(tenantId: string, resource: 'stores' | 'us
 }
 
 export class BillingService {
-  async createCheckoutSession(tenantId: string, plan: PlanKey, successUrl: string, cancelUrl: string) {
-    const priceId = PLANS[plan].priceId
-    if (!priceId) throw new Error('Plano inválido ou gratuito')
+  private async getOrCreateCustomer(tenantId: string): Promise<string> {
+    const tenant = await prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { asaasCustomerId: true, name: true },
+    })
+    if (tenant.asaasCustomerId) return tenant.asaasCustomerId
 
-    const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } })
-
-    const session = await getStripe().checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      client_reference_id: tenantId,
-      customer_email: (await prisma.user.findFirst({ where: { tenantId, role: 'OWNER' } }))?.email,
-      metadata: { tenantId, plan },
-      subscription_data: {
-        metadata: { tenantId, plan },
-      },
+    const owner = await prisma.user.findFirstOrThrow({
+      where: { tenantId, role: 'OWNER' },
+      select: { email: true },
     })
 
-    return { url: session.url }
-  }
-
-  async createPortalSession(tenantId: string, returnUrl: string) {
-    const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } })
-
-    // Busca customerId salvo (em produção, salvar no banco)
-    const customers = await getStripe().customers.search({ query: `metadata['tenantId']:'${tenantId}'` })
-    if (!customers.data.length) throw new Error('Nenhuma assinatura encontrada')
-
-    const session = await getStripe().billingPortal.sessions.create({
-      customer: customers.data[0].id,
-      return_url: returnUrl,
-    })
-
-    return { url: session.url }
-  }
-
-  async handleWebhook(rawBody: Buffer, signature: string) {
-    const event = getStripe().webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET!)
-
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session
-      const tenantId = session.metadata?.tenantId
-      const plan = session.metadata?.plan as PlanKey | undefined
-
-      if (tenantId && plan) {
-        await prisma.tenant.update({
-          where: { id: tenantId },
-          data: { plan },
-        })
-      }
+    let customer = await asaas.findCustomerByEmail(owner.email)
+    if (!customer) {
+      customer = await asaas.createCustomer({ name: tenant.name, email: owner.email })
     }
 
-    if (event.type === 'customer.subscription.deleted') {
-      const sub = event.data.object as Stripe.Subscription
-      const tenantId = sub.metadata?.tenantId
-      if (tenantId) {
-        await prisma.tenant.update({ where: { id: tenantId }, data: { plan: 'FREE' } })
+    await prisma.tenant.update({
+      where: { id: tenantId },
+      data: { asaasCustomerId: customer.id },
+    })
+
+    return customer.id
+  }
+
+  async createCheckoutSession(tenantId: string, plan: PlanKey) {
+    const planConfig = PLANS[plan]
+    if (planConfig.price === 0) throw new Error('Plano inválido ou gratuito')
+
+    const tenant = await prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { asaasSubscriptionId: true },
+    })
+
+    // Cancel existing subscription silently before creating new one
+    if (tenant.asaasSubscriptionId) {
+      await asaas.cancelSubscription(tenant.asaasSubscriptionId).catch(() => {})
+      await prisma.tenant.update({ where: { id: tenantId }, data: { asaasSubscriptionId: null } })
+    }
+
+    const customerId = await this.getOrCreateCustomer(tenantId)
+
+    const nextDueDate = new Date()
+    nextDueDate.setDate(nextDueDate.getDate() + 1)
+    const dueDateStr = nextDueDate.toISOString().split('T')[0]
+
+    const subscription = await asaas.createSubscription({
+      customer: customerId,
+      billingType: 'UNDEFINED',
+      value: planConfig.price,
+      nextDueDate: dueDateStr,
+      cycle: 'MONTHLY',
+      description: `SellSync — Plano ${planConfig.name}`,
+      externalReference: `${tenantId}:${plan}`,
+    })
+
+    await prisma.tenant.update({
+      where: { id: tenantId },
+      data: { asaasSubscriptionId: subscription.id },
+    })
+
+    // Get first pending payment to get checkout URL
+    const payments = await asaas.getSubscriptionPayments(subscription.id)
+    const invoiceUrl = payments.data.find((p) => p.status === 'PENDING')?.invoiceUrl
+      ?? payments.data[0]?.invoiceUrl
+
+    if (!invoiceUrl) throw new Error('Não foi possível gerar o link de pagamento')
+
+    return { url: invoiceUrl }
+  }
+
+  async cancelSubscription(tenantId: string) {
+    const tenant = await prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { asaasSubscriptionId: true },
+    })
+
+    if (!tenant.asaasSubscriptionId) throw new Error('Nenhuma assinatura ativa')
+
+    await asaas.cancelSubscription(tenant.asaasSubscriptionId)
+    await prisma.tenant.update({
+      where: { id: tenantId },
+      data: { plan: 'FREE', asaasSubscriptionId: null },
+    })
+
+    return { cancelled: true }
+  }
+
+  async handleWebhook(body: Record<string, unknown>, webhookToken: string | undefined) {
+    // Verify with API key (Asaas sends access_token header on webhooks)
+    const expectedToken = process.env.ASAAS_API_KEY
+    if (expectedToken && webhookToken !== expectedToken) {
+      throw new Error('Invalid webhook token')
+    }
+
+    const event = body.event as string
+    const payment = body.payment as { externalReference?: string } | undefined
+
+    const parseRef = (ref?: string) => {
+      if (!ref?.includes(':')) return null
+      const idx = ref.indexOf(':')
+      return { tenantId: ref.slice(0, idx), plan: ref.slice(idx + 1) as PlanKey }
+    }
+
+    const ref = parseRef(payment?.externalReference)
+
+    if ((event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED') && ref?.tenantId) {
+      await prisma.tenant.update({
+        where: { id: ref.tenantId },
+        data: { plan: ref.plan },
+      })
+    }
+
+    if (event === 'SUBSCRIPTION_DELETED' && payment?.externalReference) {
+      const r = parseRef(payment.externalReference)
+      if (r?.tenantId) {
+        await prisma.tenant.update({
+          where: { id: r.tenantId },
+          data: { plan: 'FREE', asaasSubscriptionId: null },
+        })
       }
     }
 
@@ -127,8 +179,25 @@ export class BillingService {
   }
 
   async getCurrentPlan(tenantId: string) {
-    const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { plan: true } })
+    const tenant = await prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { plan: true, asaasSubscriptionId: true },
+    })
     const plan = tenant.plan as PlanKey
-    return { plan, ...PLANS[plan] }
+
+    let subscriptionStatus: string | null = null
+    let nextPaymentUrl: string | null = null
+
+    if (tenant.asaasSubscriptionId) {
+      const sub = await asaas.getSubscription(tenant.asaasSubscriptionId).catch(() => null)
+      subscriptionStatus = sub?.status ?? null
+
+      if (sub?.status === 'OVERDUE') {
+        const payments = await asaas.getSubscriptionPayments(tenant.asaasSubscriptionId).catch(() => null)
+        nextPaymentUrl = payments?.data.find((p) => p.status === 'OVERDUE')?.invoiceUrl ?? null
+      }
+    }
+
+    return { key: plan, subscriptionStatus, nextPaymentUrl, ...PLANS[plan] }
   }
 }
