@@ -1,3 +1,5 @@
+import './instrument'
+import * as Sentry from '@sentry/node'
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
@@ -76,23 +78,17 @@ async function bootstrap() {
   await app.register(jwt, { secret: process.env.JWT_SECRET! })
   await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })
 
-  // Observabilidade: Sentry opcional — só inicializa se SENTRY_DSN estiver definido
-  if (process.env.SENTRY_DSN) {
-    const Sentry = await import('@sentry/node')
-    Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV ?? 'development' })
-    app.setErrorHandler((err: Error & { statusCode?: number }, req, reply) => {
-      if (!err.statusCode || err.statusCode >= 500) {
-        Sentry.captureException(err, { extra: { url: req.url, method: req.method } })
-      }
-      app.log.error(err)
-      const status = err.statusCode ?? 500
-      reply.code(status).send({
-        error: err.name ?? 'InternalServerError',
-        message: status >= 500 ? 'Erro interno do servidor' : err.message,
-      })
+  Sentry.setupFastifyErrorHandler(app)
+
+  app.setErrorHandler((err: Error & { statusCode?: number }, req, reply) => {
+    app.log.error(err)
+    const status = err.statusCode ?? 500
+    reply.code(status).send({
+      error: err.name ?? 'InternalServerError',
+      message: status >= 500 ? 'Erro interno do servidor' : err.message,
     })
-    app.log.info('Sentry inicializado')
-  }
+  })
+
   await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } }) // 10 MB
 
   // Shared auth decorator — all routes using app.authenticate go through this
@@ -137,6 +133,15 @@ async function bootstrap() {
   await startWorkers()
 
   await app.listen({ port: Number(process.env.PORT ?? 3001), host: '0.0.0.0' })
+
+  const shutdown = async (signal: string) => {
+    app.log.info(`${signal} received — shutting down`)
+    await app.close()
+    await Sentry.flush(2000)
+    process.exit(0)
+  }
+  process.on('SIGTERM', () => { void shutdown('SIGTERM') })
+  process.on('SIGINT',  () => { void shutdown('SIGINT') })
 }
 
 bootstrap().catch((err) => {

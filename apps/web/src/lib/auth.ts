@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { api } from './api'
+import * as Sentry from '@sentry/nextjs'
 
 const COOKIE_NAME = 'sellsync:token'
 
@@ -70,6 +71,7 @@ export const useAuth = create<AuthState>()(
         localStorage.removeItem('sellsync:auth')
         clearAuthCookie()
         set({ token: null, user: null, tenant: null, isAuthenticated: false })
+        Sentry.setUser(null)
       },
 
       hydrate: async () => {

@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import * as Sentry from '@sentry/nextjs'
 
 /**
  * Bloqueia o dashboard sem login válido.
@@ -25,7 +26,12 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     }
     setChecked(true)
     // Validação no servidor em segundo plano — 401 derruba a sessão
-    api.get('/auth/me').catch(() => { /* interceptor 401 redireciona */ })
+    api.get('/auth/me').then(({ data }) => {
+      // Sentry user context para rastrear erros por usuário/tenant
+      Sentry.setUser({ id: data.id, email: data.email })
+      if (data.tenant?.id) Sentry.setTag('tenant_id', data.tenant.id)
+      if (data.tenant?.plan) Sentry.setTag('plan', data.tenant.plan)
+    }).catch(() => { /* interceptor 401 redireciona */ })
   }, [router])
 
   if (!checked) return null

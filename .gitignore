@@ -9,3 +9,4 @@ dist
 coverage
 prisma/migrations/*.sql
 *.tsbuildinfo
+.env.sentry-build-plugin
