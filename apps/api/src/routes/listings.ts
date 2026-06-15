@@ -62,7 +62,7 @@ export async function listingsRoutes(app: FastifyInstance) {
 
     const before = { price: listing.price, status: listing.status, title: listing.title }
     const updated = await prisma.listing.update({ where: { id }, data: body })
-    const { userId, name: userName } = (req.user as any)
+    const { userId, name: userName } = req.user
     logAudit({ tenantId, userId, userName, action: 'UPDATE', entity: 'Listing', entityId: id, before, after: body, ip: req.ip }).catch((err) => app.log.error(err, 'audit log failed'))
     return updated
   })
@@ -100,7 +100,7 @@ export async function listingsRoutes(app: FastifyInstance) {
     if (!listing) return reply.code(404).send({ error: 'Anúncio não encontrado' })
 
     await prisma.listing.delete({ where: { id } })
-    const { userId, name: userName } = (req.user as any)
+    const { userId, name: userName } = req.user
     logAudit({ tenantId, userId, userName, action: 'DELETE', entity: 'Listing', entityId: id, ip: req.ip }).catch((err) => app.log.error(err, 'audit log failed'))
     return reply.code(204).send()
   })

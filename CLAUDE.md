@@ -1,6 +1,7 @@
 # SellSync — Hub Multichannel
 > **Também chamado de**: "projeto Upseller", "auto-pecas-rj" (nome do repo), "SellSync"
 > **Branch de trabalho**: `claude/upseller-platform-analysis-n10NA`
+> **Governança de código**: Ver `CONTRIBUTING.md` na raiz do repo. Toda contribuição (humana ou IA) deve seguir esse documento.
 
 ## O que é este projeto
 
@@ -398,10 +399,26 @@ com `vercel deploy --prebuilt --prod`. Dois gates protegem o pipeline:
 - [x] `token-refresh.worker.ts`: refresh proativo de todos os tokens ML/Shopee que expiram em <6h
 - [x] BullMQ job recorrente a cada 5h agenda o refresh proativo automaticamente
 
+### Concluído (sessão de auditoria técnica — jun/2026)
+- [x] **CONTRIBUTING.md** criado na raiz — governança de código obrigatória para todos os colaboradores
+- [x] RBAC completo: products, pricing, listings, nfe, email-settings, inventory, suppliers protegidos com `requireRole('OWNER','ADMIN')`
+- [x] N+1 eliminados: financial (batch findMany+IN), repricing ($transaction por regra), order worker (batch SKU lookup)
+- [x] Docker: usuário não-root `nodejs` (uid 1001) + HEALTHCHECK via /healthz
+- [x] CSP: removido `unsafe-inline`; adicionado HSTS (1 ano) + Referrer-Policy
+- [x] Schema: índices em Store, Warehouse, Listing(storeId,productId), FinancialTransaction(externalId)
+- [x] Pino logger: `redact` para senha/token/CVV + enriquecimento automático de logs com `userId`/`tenantId`
+- [x] `/healthz` agora valida conectividade real com o banco (SELECT 1) — retorna 503 se DB offline
+- [x] JWT payload inclui `name` do usuário; tipo em `types/fastify.d.ts` atualizado
+- [x] Eliminados `any` em listings.ts e suppliers.ts — tipagem estrita via `@fastify/jwt` augmentation
+- [x] Stripe removido do package.json (substituído por Asaas)
+- [x] CI test.yml: JWT_SECRET movido para `${{ secrets.TEST_JWT_SECRET }}`
+- [x] Warning de startup quando `ENCRYPTION_KEY` não está definida
+
 ### Pendente (críticos — próxima sessão)
 - [ ] **Configurar `ASAAS_API_KEY` no Render** (dashboard.render.com → serviço → Environment)
 - [ ] **Configurar `ENCRYPTION_KEY` no Render**: `openssl rand -hex 32` → adicionar como env var
 - [ ] **Configurar webhook Asaas**: URL `https://auto-pecas-rj.onrender.com/billing/webhook` no painel sandbox.asaas.com → Configurações → Webhooks
+- [ ] **GitHub Secrets**: adicionar `TEST_JWT_SECRET` com valor de 64+ chars
 - [ ] Workers fora do free tier do Render (hibernação mata BullMQ)
 - [ ] Migrar de `prisma db push` para migrations versionadas (requer acesso ao banco)
 - [ ] Revogar token Vercel exposto no chat + remover contas `probe-*`

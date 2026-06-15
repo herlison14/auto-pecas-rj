@@ -66,7 +66,7 @@ export async function authRoutes(app: FastifyInstance) {
     })
 
     const user = tenant.users[0]
-    const token = app.jwt.sign({ userId: user.id, tenantId: tenant.id, role: user.role }, { expiresIn: '7d' })
+    const token = app.jwt.sign({ userId: user.id, tenantId: tenant.id, role: user.role, name: user.name }, { expiresIn: '7d' })
 
     return reply.code(201).send({ token, user: { id: user.id, name: user.name, email: user.email }, tenant: { id: tenant.id, slug: tenant.slug } })
   })
@@ -82,11 +82,11 @@ export async function authRoutes(app: FastifyInstance) {
     if (!valid) return reply.code(401).send({ message: 'Credenciais inválidas' })
 
     if (user.twoFactorEnabled) {
-      const tempToken = app.jwt.sign({ userId: user.id, tenantId: user.tenantId, role: user.role, pending2fa: true }, { expiresIn: '5m' })
+      const tempToken = app.jwt.sign({ userId: user.id, tenantId: user.tenantId, role: user.role, name: user.name, pending2fa: true }, { expiresIn: '5m' })
       return { requires2fa: true, tempToken }
     }
 
-    const token = app.jwt.sign({ userId: user.id, tenantId: user.tenantId, role: user.role }, { expiresIn: '7d' })
+    const token = app.jwt.sign({ userId: user.id, tenantId: user.tenantId, role: user.role, name: user.name }, { expiresIn: '7d' })
     return { token, user: { id: user.id, name: user.name, email: user.email }, tenant: { id: user.tenantId, slug: user.tenant.slug } }
   })
 

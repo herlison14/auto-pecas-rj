@@ -6,14 +6,15 @@ declare module '@fastify/jwt' {
       userId: string
       tenantId?: string
       role?: 'OWNER' | 'ADMIN' | 'OPERATOR'
+      name?: string
       pending2fa?: boolean
-      // Tokens de propósito específico (ex: 'pwreset' para redefinição de senha)
       purpose?: string
     }
     user: {
       userId: string
       tenantId: string
       role: 'OWNER' | 'ADMIN' | 'OPERATOR'
+      name: string
       pending2fa?: boolean
       purpose?: string
     }

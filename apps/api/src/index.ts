@@ -6,6 +6,7 @@ import jwt from '@fastify/jwt'
 import rateLimit from '@fastify/rate-limit'
 import multipart from '@fastify/multipart'
 import helmet from '@fastify/helmet'
+import { prisma } from '@sellsync/database'
 
 // Fail fast on misconfigured secrets — prevents predictable defaults reaching production
 const REQUIRED_SECRETS = ['JWT_SECRET', 'DATABASE_URL'] as const
@@ -46,7 +47,25 @@ import { customersRoutes } from './routes/customers'
 import { twoFactorRoutes } from './routes/two-factor'
 import { startWorkers } from './workers'
 
-const app = Fastify({ logger: true })
+const app = Fastify({
+  logger: {
+    level: process.env.LOG_LEVEL ?? 'info',
+    redact: {
+      paths: [
+        'req.headers.authorization',
+        'req.body.senha',
+        'req.body.password',
+        'req.body.token',
+        'req.body.accessToken',
+        'req.body.refreshToken',
+        'req.body.smtpPass',
+        'req.body.resendApiKey',
+        'req.body.cvv',
+      ],
+      censor: '[REDACTED]',
+    },
+  },
+})
 
 async function bootstrap() {
   // Security headers — must be registered before routes
@@ -96,8 +115,18 @@ async function bootstrap() {
 
   await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } }) // 10 MB
 
+  // Enrich Pino logs with userId + tenantId after JWT is verified (no-op on public routes)
+  app.addHook('preHandler', async (req) => {
+    if (req.user) {
+      req.log = req.log.child({
+        userId: req.user.userId,
+        tenantId: req.user.tenantId,
+      })
+    }
+  })
+
   // Shared auth decorator — all routes using app.authenticate go through this
-  app.decorate('authenticate', async function (req: any, reply: any) {
+  app.decorate('authenticate', async function (req: import('fastify').FastifyRequest, reply: import('fastify').FastifyReply) {
     try {
       await req.jwtVerify()
     } catch (err) {
@@ -132,8 +161,16 @@ async function bootstrap() {
   await app.register(customersRoutes,           { prefix: '/customers' })
   await app.register(twoFactorRoutes,           { prefix: '/2fa' })
 
-  // Health probe for load balancers / Kubernetes
-  app.get('/healthz', async () => ({ status: 'ok', uptime: process.uptime() }))
+  // Health probe — validates DB connectivity for load balancers / Kubernetes
+  app.get('/healthz', async (req, reply) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`
+      return reply.send({ status: 'ok', uptime: process.uptime(), db: 'ok' })
+    } catch {
+      req.log.error('Health check: DB unreachable')
+      return reply.code(503).send({ status: 'degraded', uptime: process.uptime(), db: 'error' })
+    }
+  })
 
   await startWorkers()
 
