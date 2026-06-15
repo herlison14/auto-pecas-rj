@@ -414,24 +414,38 @@ com `vercel deploy --prebuilt --prod`. Dois gates protegem o pipeline:
 - [x] CI test.yml: JWT_SECRET movido para `${{ secrets.TEST_JWT_SECRET }}`
 - [x] Warning de startup quando `ENCRYPTION_KEY` não está definida
 
-### Pendente (críticos — próxima sessão)
-- [ ] **Configurar `ASAAS_API_KEY` no Render** (dashboard.render.com → serviço → Environment)
-- [ ] **Configurar `ENCRYPTION_KEY` no Render**: `openssl rand -hex 32` → adicionar como env var
-- [ ] **Configurar webhook Asaas**: URL `https://auto-pecas-rj.onrender.com/billing/webhook` no painel sandbox.asaas.com → Configurações → Webhooks
-- [ ] **GitHub Secrets**: adicionar `TEST_JWT_SECRET` com valor de 64+ chars
-- [ ] Workers fora do free tier do Render (hibernação mata BullMQ)
-- [ ] Migrar de `prisma db push` para migrations versionadas (requer acesso ao banco)
-- [ ] Revogar token Vercel exposto no chat + remover contas `probe-*`
-- [ ] Conectar primeiro marketplace (Mercado Livre OAuth — requer app em developers.mercadolivre.com.br)
-- [ ] Configurar NFe.io para emissão de notas
+### Pendente — configurações manuais (sem código necessário)
+
+#### Urgente (segurança)
+- [ ] **Revogar token Vercel exposto** — vercel.com/account/tokens → revogar → criar novo → GitHub Settings → Secrets → atualizar `VERCEL_TOKEN`
+- [ ] **Remover contas probe-*** — Neon SQL Editor: `DELETE FROM "User" WHERE email LIKE 'probe-%';`
+
+#### Crítico (funcionalidades não funcionam sem isso)
+- [ ] **`ENCRYPTION_KEY` no Render** — `openssl rand -hex 32` → dashboard.render.com → auto-pecas-rj → Environment
+- [ ] **`ASAAS_API_KEY` no Render** — sandbox.asaas.com → Configurações → Integrações → API → copiar chave `$aact_...` → Render → Environment
+- [ ] **`ASAAS_SANDBOX` no Render** — `true` para testes, `false` para produção real
+- [ ] **Webhook Asaas** — sandbox.asaas.com → Configurações → Webhooks → URL: `https://auto-pecas-rj.onrender.com/billing/webhook` → Eventos: `PAYMENT_RECEIVED`, `PAYMENT_CONFIRMED`, `SUBSCRIPTION_DELETED` → Access Token = valor do `ASAAS_API_KEY`
+
+#### CI (já tem fallback, mas ideal configurar)
+- [~] **`TEST_JWT_SECRET` no GitHub** — Settings → Secrets → Actions → New → `TEST_JWT_SECRET` = string 64+ chars. *(CI funciona mesmo sem isso via fallback, mas recomendado para produção)*
+
+#### Negócio (para começar a vender)
+- [ ] **Mercado Livre OAuth** — developers.mercadolivre.com.br → criar app → obter `ML_APP_ID` + `ML_CLIENT_SECRET` → adicionar no Render
+- [ ] **NFe.io** — nfe.io → cadastrar empresa (CNPJ + certificado A1) → obter `NFEIO_API_KEY` + `NFEIO_COMPANY_ID` → adicionar no Render
+
+#### Infraestrutura (quando tiver usuários reais)
+- [ ] **Upgrade Render Free → Starter ($7/mês)** — Free tier hiberna após 15 min de inatividade, o que mata os workers BullMQ (sync de pedidos/estoque/anúncios para de funcionar)
+- [ ] **Migrations versionadas** — migrar de `prisma db push` para `prisma migrate` quando houver dados reais em produção
 
 ### Asaas — configuração necessária
 ```
 Render (dashboard.render.com → auto-pecas-rj → Environment):
-  ASAAS_API_KEY = $aact_...       ← sua chave do painel Asaas
-  ASAAS_SANDBOX = false           ← true para testes
+  ASAAS_API_KEY = $aact_...       ← sua chave do painel Asaas (sandbox.asaas.com → Configurações → Integrações → API)
+  ASAAS_SANDBOX = true            ← true para testes, false para produção
+  ENCRYPTION_KEY = <openssl rand -hex 32>
 
 Asaas (sandbox.asaas.com → Configurações → Webhooks):
   URL: https://auto-pecas-rj.onrender.com/billing/webhook
+  Access Token: mesmo valor do ASAAS_API_KEY
   Eventos: PAYMENT_RECEIVED, PAYMENT_CONFIRMED, SUBSCRIPTION_DELETED
 ```
