@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '@sellsync/database'
 import { logAudit } from '../services/audit.service'
+import { requireRole } from '../lib/rbac'
 
 export async function listingsRoutes(app: FastifyInstance) {
   app.addHook('onRequest', async (req) => { await req.jwtVerify() })
@@ -62,12 +63,12 @@ export async function listingsRoutes(app: FastifyInstance) {
     const before = { price: listing.price, status: listing.status, title: listing.title }
     const updated = await prisma.listing.update({ where: { id }, data: body })
     const { userId, name: userName } = (req.user as any)
-    logAudit({ tenantId, userId, userName, action: 'UPDATE', entity: 'Listing', entityId: id, before, after: body, ip: req.ip }).catch(() => {})
+    logAudit({ tenantId, userId, userName, action: 'UPDATE', entity: 'Listing', entityId: id, before, after: body, ip: req.ip }).catch((err) => app.log.error(err, 'audit log failed'))
     return updated
   })
 
-  // PATCH /listings/bulk — bulk price or status update
-  app.patch('/bulk', async (req, reply) => {
+  // PATCH /listings/bulk — bulk price or status update (requires ADMIN/OWNER)
+  app.patch('/bulk', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { tenantId } = req.user as { tenantId: string }
     const { ids, price, status } = z.object({
       ids: z.array(z.string()).min(1).max(200),
@@ -91,7 +92,7 @@ export async function listingsRoutes(app: FastifyInstance) {
   })
 
   // DELETE /listings/:id
-  app.delete('/:id', async (req, reply) => {
+  app.delete('/:id', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { tenantId } = req.user as { tenantId: string }
     const { id } = req.params as { id: string }
 
@@ -100,7 +101,7 @@ export async function listingsRoutes(app: FastifyInstance) {
 
     await prisma.listing.delete({ where: { id } })
     const { userId, name: userName } = (req.user as any)
-    logAudit({ tenantId, userId, userName, action: 'DELETE', entity: 'Listing', entityId: id, ip: req.ip }).catch(() => {})
+    logAudit({ tenantId, userId, userName, action: 'DELETE', entity: 'Listing', entityId: id, ip: req.ip }).catch((err) => app.log.error(err, 'audit log failed'))
     return reply.code(204).send()
   })
 }

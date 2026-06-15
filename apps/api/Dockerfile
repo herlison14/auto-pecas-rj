@@ -30,7 +30,9 @@ RUN cd apps/api && npm run build
 # ── Production image ──────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl curl
+
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
 WORKDIR /app
 
@@ -54,6 +56,11 @@ COPY --from=base /app/node_modules/.prisma ./node_modules/.prisma
 COPY apps/api/docker-entrypoint.sh ./apps/api/
 RUN chmod +x ./apps/api/docker-entrypoint.sh
 
+USER nodejs
+
 EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:3001/healthz || exit 1
 
 CMD ["./apps/api/docker-entrypoint.sh"]

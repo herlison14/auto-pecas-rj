@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@sellsync/database'
 import { NFeService } from '@sellsync/nfe'
 import { nfeQueue } from '../workers/queues'
+import { requireRole } from '../lib/rbac'
 
 const nfeService = new NFeService()
 
@@ -29,7 +30,7 @@ export async function nfeRoutes(app: FastifyInstance) {
     return settings ?? {}
   })
 
-  app.put('/settings', async (req) => {
+  app.put('/settings', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req) => {
     const { tenantId } = req.user as { tenantId: string }
     const body = settingsSchema.parse(req.body)
     return prisma.nfeSettings.upsert({
@@ -40,7 +41,7 @@ export async function nfeRoutes(app: FastifyInstance) {
   })
 
   // Emitir NF-e para um pedido
-  app.post('/orders/:orderId/emit', async (req, reply) => {
+  app.post('/orders/:orderId/emit', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { orderId } = req.params as { orderId: string }
     const { tenantId } = req.user as { tenantId: string }
 
@@ -54,7 +55,7 @@ export async function nfeRoutes(app: FastifyInstance) {
   })
 
   // Cancelar NF-e
-  app.post('/orders/:orderId/cancel', async (req, reply) => {
+  app.post('/orders/:orderId/cancel', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { orderId } = req.params as { orderId: string }
     const { tenantId } = req.user as { tenantId: string }
     const { reason } = z.object({ reason: z.string().min(15) }).parse(req.body)
@@ -64,7 +65,7 @@ export async function nfeRoutes(app: FastifyInstance) {
   })
 
   // Emitir NF-e em lote
-  app.post('/batch-emit', async (req, reply) => {
+  app.post('/batch-emit', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { tenantId } = req.user as { tenantId: string }
     const { orderIds } = z.object({ orderIds: z.array(z.string()).min(1).max(100) }).parse(req.body)
 

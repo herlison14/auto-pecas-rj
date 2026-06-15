@@ -34,13 +34,18 @@ export async function syncFinancialFromOrders(tenantId: string, days = 30) {
     select: { id: true, storeId: true, marketplace: true, total: true, shippingCost: true, createdAt: true },
   })
 
+  // Batch-check which orders already have transactions (avoids N+1)
+  const existingIds = new Set(
+    (await prisma.financialTransaction.findMany({
+      where: { tenantId, externalId: { in: orders.map((o) => `order_${o.id}_sale`) } },
+      select: { externalId: true },
+    })).map((t) => t.externalId),
+  )
+
   let created = 0
 
   for (const order of orders) {
-    const existing = await prisma.financialTransaction.findFirst({
-      where: { tenantId, externalId: `order_${order.id}_sale` },
-    })
-    if (existing) continue
+    if (existingIds.has(`order_${order.id}_sale`)) continue
 
     const total = new Decimal(order.total.toString())
     const shipping = new Decimal(order.shippingCost.toString())

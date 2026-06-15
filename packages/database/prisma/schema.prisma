@@ -114,6 +114,7 @@ model Store {
   financialTxs FinancialTransaction[] @relation("FinancialStore")
 
   @@unique([tenantId, marketplace, externalId])
+  @@index([tenantId])
   @@map("stores")
 }
 
@@ -181,6 +182,7 @@ model Listing {
   priceHistory   PriceHistory[]
 
   @@unique([storeId, externalId])
+  @@index([storeId, productId])
   @@map("listings")
 }
 
@@ -204,6 +206,7 @@ model Warehouse {
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   stockItems StockItem[]
 
+  @@index([tenantId])
   @@map("warehouses")
 }
 
@@ -525,6 +528,7 @@ model FinancialTransaction {
 
   @@index([tenantId, referenceDate])
   @@index([tenantId, type])
+  @@index([tenantId, externalId])
   @@map("financial_transactions")
 }
 

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '@sellsync/database'
 import { listingQueue } from '../workers/queues'
+import { requireRole } from '../lib/rbac'
 
 const productSchema = z.object({
   sku: z.string().min(1).max(100),
@@ -70,7 +71,7 @@ export async function productsRoutes(app: FastifyInstance) {
     return reply.code(201).send(product)
   })
 
-  app.put('/:id', async (req, reply) => {
+  app.put('/:id', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const tenantId = (req.user as { tenantId: string }).tenantId
     const existing = await prisma.product.findFirst({ where: { id, tenantId } })
@@ -79,7 +80,7 @@ export async function productsRoutes(app: FastifyInstance) {
     return prisma.product.update({ where: { id }, data: { ...body, attributes: body.attributes as any } })
   })
 
-  app.delete('/:id', async (req, reply) => {
+  app.delete('/:id', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const tenantId = (req.user as { tenantId: string }).tenantId
     await prisma.product.delete({ where: { id, tenantId } })

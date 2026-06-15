@@ -49,20 +49,26 @@ export async function processOrder(job: Job) {
       },
     })
 
-    // Reserve stock for new orders
+    // Reserve stock for new orders — batch product lookup to avoid N+1
     if (order.status === 'CONFIRMED') {
-      for (const item of rawOrder.items) {
-        const product = await prisma.product.findFirst({
-          where: { tenantId: store.tenantId, sku: item.sku },
-        })
-        if (product) {
+      const skus = rawOrder.items.map((i) => i.sku)
+      const products = await prisma.product.findMany({
+        where: { tenantId: store.tenantId, sku: { in: skus } },
+        select: { id: true, sku: true },
+      })
+      const productBySku = new Map(products.map((p) => [p.sku, p]))
+
+      await Promise.all(
+        rawOrder.items.map(async (item) => {
+          const product = productBySku.get(item.sku)
+          if (!product) return
           await prisma.stockItem.updateMany({
             where: { productId: product.id },
             data: { reserved: { increment: item.quantity } },
           })
           await inventorySyncQueue.add('sync-product', { productId: product.id, tenantId: store.tenantId })
-        }
-      }
+        }),
+      )
     }
 
     // Auto-emit NF-e on confirmed + paid orders (se a emissão automática
