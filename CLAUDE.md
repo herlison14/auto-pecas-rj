@@ -228,6 +228,7 @@ Inicializados em `startWorkers()` chamado no bootstrap da API.
 | `AMAZON_CLIENT_ID` / `AMAZON_CLIENT_SECRET` | Não | Amazon SP-API |
 | `ASAAS_API_KEY` | **Sim** (billing) | Chave da API Asaas (`$aact_...`) |
 | `ASAAS_SANDBOX` | Não (default `false`) | `true` para sandbox/testes |
+| `ENCRYPTION_KEY` | Recomendado | 64 hex chars (32 bytes) para criptografar tokens de marketplace. Gerar: `openssl rand -hex 32` |
 | `NFEIO_API_KEY` / `NFEIO_COMPANY_ID` | Não | NF-e |
 
 ### Frontend (`apps/web`)
@@ -389,13 +390,20 @@ com `vercel deploy --prebuilt --prod`. Dois gates protegem o pipeline:
 - [x] UserMenu no header: avatar com iniciais, badge de plano, dropdown com logout
 - [x] ErrorBoundary reporta para Sentry via `componentDidCatch`
 
+### Concluído (sessão de segurança + infra — jun/2026)
+- [x] `lib/crypto.ts`: AES-256-GCM encrypt/decrypt — backward-compatible (plaintext passthrough sem `ENCRYPTION_KEY`)
+- [x] `accessToken` e `refreshToken` de lojas criptografados no banco ao salvar (manual + OAuth ML + OAuth Shopee)
+- [x] `token-refresher.ts`: decrypt transparente + encrypt ao renovar — workers sempre recebem token plaintext
+- [x] Workers (`order`, `inventory`, `listing`) usam `getValidToken()` em vez de `store.accessToken` diretamente
+- [x] `token-refresh.worker.ts`: refresh proativo de todos os tokens ML/Shopee que expiram em <6h
+- [x] BullMQ job recorrente a cada 5h agenda o refresh proativo automaticamente
+
 ### Pendente (críticos — próxima sessão)
 - [ ] **Configurar `ASAAS_API_KEY` no Render** (dashboard.render.com → serviço → Environment)
+- [ ] **Configurar `ENCRYPTION_KEY` no Render**: `openssl rand -hex 32` → adicionar como env var
 - [ ] **Configurar webhook Asaas**: URL `https://auto-pecas-rj.onrender.com/billing/webhook` no painel sandbox.asaas.com → Configurações → Webhooks
-- [ ] Renovação automática de tokens dos marketplaces (ML expira em ~6h)
 - [ ] Workers fora do free tier do Render (hibernação mata BullMQ)
-- [ ] Criptografar accessToken das lojas no banco
-- [ ] Migrar de `prisma db push` para migrations versionadas
+- [ ] Migrar de `prisma db push` para migrations versionadas (requer acesso ao banco)
 - [ ] Revogar token Vercel exposto no chat + remover contas `probe-*`
 - [ ] Conectar primeiro marketplace (Mercado Livre OAuth — requer app em developers.mercadolivre.com.br)
 - [ ] Configurar NFe.io para emissão de notas

@@ -3,6 +3,7 @@ import { prisma } from '@sellsync/database'
 import { MarketplaceAdapterFactory } from '@sellsync/integrations'
 import { inventorySyncQueue, nfeQueue } from './queues'
 import { notifyTenantNewOrder } from '../services/push.service'
+import { getValidToken } from '../lib/token-refresher'
 
 export async function processOrder(job: Job) {
   const { name, data } = job
@@ -11,7 +12,8 @@ export async function processOrder(job: Job) {
     const { storeId, externalId } = data as { storeId: string; externalId: string }
 
     const store = await prisma.store.findUniqueOrThrow({ where: { id: storeId } })
-    const adapter = await MarketplaceAdapterFactory.create(store)
+    const accessToken = await getValidToken(storeId)
+    const adapter = await MarketplaceAdapterFactory.create({ ...store, accessToken })
     const rawOrder = await adapter.getOrder(externalId)
 
     const order = await prisma.order.upsert({

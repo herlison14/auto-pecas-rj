@@ -4,6 +4,7 @@ import { prisma } from '@sellsync/database'
 import { z } from 'zod'
 import { checkAllStoresHealth, checkStoreHealth } from '../services/health.service'
 import { assertPlanLimit, PlanLimitError } from '../services/billing.service'
+import { encrypt } from '../lib/crypto'
 
 const MARKETPLACES = [
   'MERCADO_LIVRE', 'SHOPEE', 'AMAZON', 'MAGALU',
@@ -109,13 +110,13 @@ export async function integrationsRoutes(app: FastifyInstance) {
         marketplace: body.marketplace,
         name: body.name,
         externalId: body.externalId,
-        accessToken: body.accessToken,
-        refreshToken: body.refreshToken,
+        accessToken: encrypt(body.accessToken),
+        refreshToken: body.refreshToken ? encrypt(body.refreshToken) : undefined,
       },
       update: {
         name: body.name,
-        accessToken: body.accessToken,
-        refreshToken: body.refreshToken,
+        accessToken: encrypt(body.accessToken),
+        refreshToken: body.refreshToken ? encrypt(body.refreshToken) : undefined,
         isActive: true,
       },
       select: { id: true, marketplace: true, name: true, isActive: true },
@@ -163,13 +164,13 @@ export async function integrationsRoutes(app: FastifyInstance) {
         marketplace: 'MERCADO_LIVRE',
         name: me.nickname,
         externalId: String(me.id),
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encrypt(tokens.access_token),
+        refreshToken: encrypt(tokens.refresh_token),
         tokenExpiry: new Date(Date.now() + tokens.expires_in * 1000),
       },
       update: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encrypt(tokens.access_token),
+        refreshToken: encrypt(tokens.refresh_token),
         tokenExpiry: new Date(Date.now() + tokens.expires_in * 1000),
         isActive: true,
       },
@@ -231,13 +232,13 @@ export async function integrationsRoutes(app: FastifyInstance) {
         marketplace: 'SHOPEE',
         name: shopInfo.response?.shop_name ?? `Shopee ${shop_id}`,
         externalId: shop_id,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encrypt(tokens.access_token),
+        refreshToken: encrypt(tokens.refresh_token),
         tokenExpiry: new Date(Date.now() + tokens.expire_in * 1000),
       },
       update: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encrypt(tokens.access_token),
+        refreshToken: encrypt(tokens.refresh_token),
         tokenExpiry: new Date(Date.now() + tokens.expire_in * 1000),
         isActive: true,
       },

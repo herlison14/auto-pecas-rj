@@ -19,8 +19,9 @@ function parseRedisUrl(url: string) {
 
 export const redisConnection = parseRedisUrl(process.env.REDIS_URL ?? 'redis://localhost:6379')
 
-export const webhookQueue      = new Queue('webhooks',       { connection: redisConnection })
-export const inventorySyncQueue = new Queue('inventory-sync', { connection: redisConnection })
-export const orderQueue         = new Queue('orders',         { connection: redisConnection })
-export const nfeQueue           = new Queue('nfe',            { connection: redisConnection })
-export const listingQueue       = new Queue('listings',       { connection: redisConnection })
+export const webhookQueue        = new Queue('webhooks',       { connection: redisConnection })
+export const inventorySyncQueue  = new Queue('inventory-sync', { connection: redisConnection })
+export const orderQueue          = new Queue('orders',         { connection: redisConnection })
+export const nfeQueue            = new Queue('nfe',            { connection: redisConnection })
+export const listingQueue        = new Queue('listings',       { connection: redisConnection })
+export const tokenRefreshQueue   = new Queue('token-refresh',  { connection: redisConnection })

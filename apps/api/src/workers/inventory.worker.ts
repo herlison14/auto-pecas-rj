@@ -2,6 +2,7 @@ import type { Job } from 'bullmq'
 import { prisma } from '@sellsync/database'
 import { MarketplaceAdapterFactory } from '@sellsync/integrations'
 import { notifyTenantLowStock } from '../services/push.service'
+import { getValidToken } from '../lib/token-refresher'
 
 const LOW_STOCK_THRESHOLD = 5
 
@@ -26,7 +27,8 @@ export async function processInventorySync(job: Job<{ productId: string; tenantI
 
   await Promise.allSettled(
     listings.map(async (listing) => {
-      const adapter = await MarketplaceAdapterFactory.create(listing.store)
+      const accessToken = await getValidToken(listing.store.id)
+      const adapter = await MarketplaceAdapterFactory.create({ ...listing.store, accessToken })
       await adapter.updateStock(listing.externalId, available)
     })
   )
