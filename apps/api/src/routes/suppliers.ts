@@ -5,6 +5,7 @@ import {
   listPurchaseOrders, getPurchaseOrder, createPurchaseOrder,
   sendPurchaseOrder, receivePurchaseOrder, cancelPurchaseOrder,
 } from '../services/supplier.service'
+import { requireRole } from '../lib/rbac'
 
 const itemSchema = z.object({
   productId: z.string(),
@@ -43,7 +44,7 @@ export async function suppliersRoutes(app: FastifyInstance) {
     return s
   })
 
-  app.patch('/:id', { onRequest: [app.authenticate] }, async (req, reply) => {
+  app.patch('/:id', { onRequest: [app.authenticate], preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { tenantId } = (req as any).user
     const { id } = req.params as { id: string }
     const body = z.object({
@@ -59,7 +60,7 @@ export async function suppliersRoutes(app: FastifyInstance) {
     return reply.code(204).send()
   })
 
-  app.delete('/:id', { onRequest: [app.authenticate] }, async (req, reply) => {
+  app.delete('/:id', { onRequest: [app.authenticate], preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { tenantId } = (req as any).user
     const { id } = req.params as { id: string }
     await deleteSupplier(tenantId, id)
@@ -117,7 +118,7 @@ export async function suppliersRoutes(app: FastifyInstance) {
     return po
   })
 
-  app.post('/purchase-orders/:id/cancel', { onRequest: [app.authenticate] }, async (req, reply) => {
+  app.post('/purchase-orders/:id/cancel', { onRequest: [app.authenticate], preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { tenantId } = (req as any).user
     const { id } = req.params as { id: string }
     await cancelPurchaseOrder(tenantId, id)

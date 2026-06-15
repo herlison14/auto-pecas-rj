@@ -15,6 +15,9 @@ for (const key of REQUIRED_SECRETS) {
 if (process.env.JWT_SECRET === 'change-me-in-production') {
   throw new Error('JWT_SECRET must be changed from the default example value')
 }
+if (!process.env.ENCRYPTION_KEY) {
+  console.warn('[WARN] ENCRYPTION_KEY not set — marketplace tokens stored in plaintext. Set ENCRYPTION_KEY (openssl rand -hex 32) in production.')
+}
 import { ordersRoutes } from './routes/orders'
 import { inventoryRoutes } from './routes/inventory'
 import { productsRoutes } from './routes/products'

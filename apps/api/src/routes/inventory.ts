@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '@sellsync/database'
 import { InventoryService } from '../services/inventory.service'
+import { requireRole } from '../lib/rbac'
 
 const adjustSchema = z.object({
   warehouseId: z.string(),
@@ -32,7 +33,7 @@ export async function inventoryRoutes(app: FastifyInstance) {
     return service.getByProduct({ tenantId, productId })
   })
 
-  app.post('/:productId/adjust', async (req) => {
+  app.post('/:productId/adjust', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req) => {
     const { productId } = req.params as { productId: string }
     const tenantId = (req.user as { tenantId: string }).tenantId
     const body = adjustSchema.parse(req.body)
@@ -53,10 +54,10 @@ export async function inventoryRoutes(app: FastifyInstance) {
   // Armazéns
   app.get('/warehouses', async (req) => {
     const tenantId = (req.user as { tenantId: string }).tenantId
-    return prisma.warehouse.findMany({ where: { tenantId }, orderBy: { createdAt: 'asc' } })
+    return prisma.warehouse.findMany({ where: { tenantId }, orderBy: { createdAt: 'asc' }, take: 50 })
   })
 
-  app.post('/warehouses', async (req, reply) => {
+  app.post('/warehouses', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const tenantId = (req.user as { tenantId: string }).tenantId
     const body = z.object({ name: z.string().min(2), address: z.record(z.unknown()).optional() }).parse(req.body)
     const count = await prisma.warehouse.count({ where: { tenantId } })
