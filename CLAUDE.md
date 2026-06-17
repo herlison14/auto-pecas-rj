@@ -2,6 +2,7 @@
 > **Também chamado de**: "projeto Upseller", "auto-pecas-rj" (nome do repo), "SellSync"
 > **Branch de trabalho**: `claude/upseller-platform-analysis-n10NA`
 > **Governança de código**: Ver `CONTRIBUTING.md` na raiz do repo. Toda contribuição (humana ou IA) deve seguir esse documento.
+> **Antes de TODO commit**: revisar o diff contra o checklist do `CONTRIBUTING.md` (logs sem dados sensíveis, RBAC em rotas destrutivas, sem N+1, sem `any`, validação Zod em input novo). Reportar no resumo do commit qualquer item que não se aplique.
 
 ## O que é este projeto
 
