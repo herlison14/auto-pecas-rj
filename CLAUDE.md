@@ -414,6 +414,15 @@ com `vercel deploy --prebuilt --prod`. Dois gates protegem o pipeline:
 - [x] CI test.yml: JWT_SECRET movido para `${{ secrets.TEST_JWT_SECRET }}`
 - [x] Warning de startup quando `ENCRYPTION_KEY` não está definida
 
+### Concluído (sessão de navegação mobile — jun/2026)
+- [x] Sidebar (`apps/web/src/components/ui/sidebar.tsx`) some abaixo de `lg` (1024px) — `hidden lg:flex`
+- [x] Dados de navegação extraídos para `apps/web/src/lib/nav-sections.ts` (compartilhado entre sidebar desktop e menu mobile)
+- [x] Padrão "drill-down" para mobile: header ganha botão hambúrguer (`mobile-nav-header.tsx`) que abre `/dashboard/menu` — tela cheia com todas as seções, mesmo padrão de Notion/Stripe mobile. Tocar numa seção navega normalmente; o hambúrguer fica acessível em qualquer página para voltar ao menu completo
+- [x] 17 tabelas que vazavam horizontalmente em mobile (orders, catalog, financial, suppliers, settings/team, performance, repricing, returns, customers, listings, integrations/health, stock-table) agora envolvidas em `overflow-x-auto`
+- [x] `viewport` meta tag adicionada em `apps/web/src/app/layout.tsx` (estava ausente)
+- [x] Catálogo: stats em coluna única no mobile (`grid-cols-1 sm:grid-cols-3`) e busca full-width
+- [x] Verificado visualmente com Playwright (390×844 mobile / 1440×900 desktop) — sidebar/hambúrguer alternam corretamente, navegação menu↔seção funciona, sem overflow de página
+
 ### Pendente — configurações manuais (sem código necessário)
 
 #### Urgente (segurança)
