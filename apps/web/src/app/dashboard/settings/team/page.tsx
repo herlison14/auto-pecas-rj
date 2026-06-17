@@ -75,7 +75,8 @@ export default function TeamPage() {
         {loadingMembers ? (
           <div className="p-4 space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10" />)}</div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+<table className="w-full text-sm">
             <thead className="bg-muted/40 border-b">
               <tr>
                 {['Nome', 'E-mail', 'Perfil', ''].map((h) => (
@@ -110,6 +111,7 @@ export default function TeamPage() {
               ))}
             </tbody>
           </table>
+</div>
         )}
       </Card>
 
@@ -118,7 +120,8 @@ export default function TeamPage() {
           <CardHeader className="pb-2 border-b">
             <CardTitle className="text-sm">Convites pendentes</CardTitle>
           </CardHeader>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+<table className="w-full text-sm">
             <thead className="bg-muted/40 border-b">
               <tr>
                 {['E-mail', 'Perfil', 'Expira em', ''].map((h) => (
@@ -147,6 +150,7 @@ export default function TeamPage() {
               })}
             </tbody>
           </table>
+</div>
         </Card>
       )}
 

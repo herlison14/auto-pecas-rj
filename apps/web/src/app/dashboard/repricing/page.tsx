@@ -226,7 +226,8 @@ export default function RepricingPage() {
         {isLoading ? (
           <div className="p-4 space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+<table className="w-full text-sm">
             <thead className="border-b bg-muted/40">
               <tr>
                 {['Nome', 'Estratégia', 'Canal', 'Guardrails', 'Último ajuste', 'Ativo', ''].map((h) => (
@@ -275,6 +276,7 @@ export default function RepricingPage() {
               ))}
             </tbody>
           </table>
+</div>
         )}
       </Card>
     </div>

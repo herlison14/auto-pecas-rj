@@ -149,7 +149,8 @@ export default function PricingPage() {
         {isLoading ? (
           <div className="p-5 space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12" />)}</div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+<table className="w-full text-sm">
             <thead className="border-b bg-muted/40">
               <tr>
                 {['Nome', 'Tipo', 'Valor', 'Canal', 'Ativo', ''].map((h) => (
@@ -185,6 +186,7 @@ export default function PricingPage() {
               ))}
             </tbody>
           </table>
+</div>
         )}
       </Card>
     </div>

@@ -21,7 +21,8 @@ export function StockTable({ items, isLoading }: { items: StockItem[]; isLoading
 
   return (
     <div className="overflow-hidden rounded-lg border bg-white">
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+<table className="w-full text-sm">
         <thead className="bg-gray-50 text-xs uppercase text-gray-500">
           <tr>
             <th className="p-3 text-left">Produto</th>
@@ -95,6 +96,7 @@ export function StockTable({ items, isLoading }: { items: StockItem[]; isLoading
           })}
         </tbody>
       </table>
+</div>
     </div>
   )
 }

@@ -252,7 +252,8 @@ export default function FinancialPage() {
             )}
           </CardTitle>
         </CardHeader>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+<table className="w-full text-sm">
           <thead className="border-b bg-muted/40">
             <tr>
               {['Data', 'Tipo', 'Canal', 'Descrição', 'Valor'].map((h) => (
@@ -295,6 +296,7 @@ export default function FinancialPage() {
             })}
           </tbody>
         </table>
+</div>
         {txData && txData.pages > 1 && (
           <div className="flex items-center justify-between border-t px-4 py-3">
             <span className="text-xs text-muted-foreground">Página {page} de {txData.pages}</span>

@@ -53,7 +53,8 @@ export function OrdersTable({ orders, isLoading, selected, onSelect }: {
 
   return (
     <Card className="overflow-hidden">
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+<table className="w-full text-sm">
         <thead className="border-b bg-muted/40">
           <tr>
             <th className="w-10 px-4 py-3">
@@ -100,6 +101,7 @@ export function OrdersTable({ orders, isLoading, selected, onSelect }: {
           })}
         </tbody>
       </table>
+</div>
     </Card>
   )
 }

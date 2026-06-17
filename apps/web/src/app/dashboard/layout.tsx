@@ -8,6 +8,7 @@ import { OnboardingBanner } from '@/components/ui/onboarding-banner'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { AuthGuard } from '@/components/ui/auth-guard'
 import { UserMenu } from '@/components/ui/user-menu'
+import { MobileNavHeader } from '@/components/ui/mobile-nav-header'
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
@@ -30,9 +31,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               className="flex h-12 shrink-0 items-center justify-between px-4 gap-3"
               style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0f0f1a' }}
             >
-              {/* Left — breadcrumb placeholder (server-rendered, pages override via h1) */}
+              {/* Left — menu hambúrguer + título em mobile; breadcrumb placeholder em desktop */}
               <div className="flex items-center gap-2 min-w-0">
-                <div className="h-4 w-px hidden sm:block" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                <MobileNavHeader />
+                <div className="h-4 w-px hidden lg:block" style={{ background: 'rgba(255,255,255,0.08)' }} />
               </div>
 
               {/* Right — actions */}

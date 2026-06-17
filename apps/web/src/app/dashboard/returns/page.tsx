@@ -127,7 +127,8 @@ export default function ReturnsPage() {
             {isLoading ? (
               <div className="p-4 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
             ) : (
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+<table className="w-full text-sm">
                 <thead className="border-b bg-muted/40">
                   <tr>
                     {['Pedido', 'Canal', 'Motivo', 'Status', 'Valor', 'Data'].map((h) => (
@@ -173,6 +174,7 @@ export default function ReturnsPage() {
                   })}
                 </tbody>
               </table>
+</div>
             )}
           </Card>
         </div>

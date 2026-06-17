@@ -116,7 +116,8 @@ export default function IntegrationHealthPage() {
         </Card>
       ) : (
         <Card className="overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+<table className="w-full text-sm">
             <thead className="border-b bg-muted/40">
               <tr>
                 {['Canal', 'Status', 'Latência', 'Token expira em', 'Última verificação', ''].map((h) => (
@@ -170,6 +171,7 @@ export default function IntegrationHealthPage() {
               ))}
             </tbody>
           </table>
+</div>
         </Card>
       )}
 

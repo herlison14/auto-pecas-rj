@@ -142,7 +142,8 @@ export default function PerformancePage() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Performance por Canal</CardTitle>
         </CardHeader>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+<table className="w-full text-sm">
           <thead className="border-b bg-muted/40">
             <tr>
               {['Canal', 'Pedidos', 'Entregues', 'Cancelados', 'Tx. Cancel.', 'SLA Envio', 'Prazo Entrega', 'Receita'].map((h) => (
@@ -182,6 +183,7 @@ export default function PerformancePage() {
             ))}
           </tbody>
         </table>
+</div>
       </Card>
 
       {/* Cancellation breakdown bar */}

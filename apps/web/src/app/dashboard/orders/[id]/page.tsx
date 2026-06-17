@@ -170,7 +170,8 @@ export default function OrderDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+<table className="w-full text-sm">
                 <thead className="border-b bg-muted/30">
                   <tr>
                     {['Produto', 'Qtd', 'Preço unit.', 'Total'].map((h) => (
@@ -192,6 +193,7 @@ export default function OrderDetailPage() {
                   ))}
                 </tbody>
               </table>
+</div>
               <div className="border-t px-4 py-3 space-y-1.5">
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Subtotal</span>

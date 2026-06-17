@@ -189,7 +189,8 @@ function PoForm({ suppliers, onClose }: { suppliers: Supplier[]; onClose: () => 
 
         {items.length > 0 && (
           <div className="border rounded-lg overflow-hidden mb-4">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+<table className="w-full text-sm">
               <thead className="bg-muted/40 border-b">
                 <tr>
                   {['Produto', 'Qtd', 'Custo unit.', 'Subtotal', ''].map((h) => (
@@ -234,6 +235,7 @@ function PoForm({ suppliers, onClose }: { suppliers: Supplier[]; onClose: () => 
                 </tr>
               </tfoot>
             </table>
+</div>
           </div>
         )}
 
@@ -296,7 +298,8 @@ function ReceiveModal({ po, onClose }: { po: PO; onClose: () => void }) {
         </div>
 
         <div className="border rounded-lg overflow-hidden mb-4">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+<table className="w-full text-sm">
             <thead className="bg-muted/40 border-b">
               <tr>
                 {['Produto', 'Pendente', 'Receber agora'].map((h) => (
@@ -325,6 +328,7 @@ function ReceiveModal({ po, onClose }: { po: PO; onClose: () => void }) {
               })}
             </tbody>
           </table>
+</div>
         </div>
 
         <div className="flex justify-end gap-2">
@@ -422,7 +426,8 @@ export default function SuppliersPage() {
               </div>
             </div>
           </CardHeader>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+<table className="w-full text-sm">
             <thead className="border-b bg-muted/40">
               <tr>
                 {['Fornecedor', 'CNPJ', 'Contato', 'E-mail', 'Status', ''].map((h) => (
@@ -472,6 +477,7 @@ export default function SuppliersPage() {
               ))}
             </tbody>
           </table>
+</div>
         </Card>
       )}
 
@@ -490,7 +496,8 @@ export default function SuppliersPage() {
           </div>
 
           <Card className="overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+<table className="w-full text-sm">
               <thead className="border-b bg-muted/40">
                 <tr>
                   {['Número', 'Fornecedor', 'Itens', 'Total', 'Status', 'Previsão', ''].map((h) => (
@@ -558,6 +565,7 @@ export default function SuppliersPage() {
                 })}
               </tbody>
             </table>
+</div>
           </Card>
         </div>
       )}
