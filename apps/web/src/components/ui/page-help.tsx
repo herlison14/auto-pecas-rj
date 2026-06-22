@@ -219,6 +219,21 @@ const HELP: Record<string, HelpEntry> = {
     ],
     tips: ['Recomendamos ativar o 2FA para todos os usuários com acesso administrativo.'],
   },
+  '/dashboard/funnel-diagnostics': {
+    title: 'Diagnóstico de Funil',
+    intro: 'Identifica o principal gargalo de vendas de cada produto (alcance, atração, conversão, abandono de carrinho ou margem) e sugere ações priorizadas em R$.',
+    steps: [
+      'Clique em "Importar dados" para subir a planilha com impressões, cliques, visitas, adições ao carrinho e pedidos por produto, marketplace e período.',
+      'Os indicadores (CTR, taxa de adição ao carrinho, conversão, abandono) são calculados automaticamente a partir desses dados.',
+      'Selecione um snapshot na lista e clique em "Diagnosticar" para a IA analisar o funil e apontar o gargalo principal.',
+      'O resultado mostra a causa provável, 3 ações priorizadas com a métrica que cada uma deve mover e o ganho estimado em reais.',
+      'Acompanhe o status de cada diagnóstico (pendente, em andamento, resolvido) conforme as ações forem aplicadas.',
+    ],
+    tips: [
+      'Disponível a partir do plano Starter.',
+      'Quanto mais períodos importados para o mesmo produto, melhor a comparação com a média histórica de alcance.',
+    ],
+  },
   '/dashboard/notifications': {
     title: 'Notificações',
     intro: 'Central de avisos do sistema: pedidos novos, estoque crítico, erros de sincronização.',

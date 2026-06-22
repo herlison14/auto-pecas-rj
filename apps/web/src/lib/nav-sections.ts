@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, ShoppingCart, Warehouse, Package,
   Plug, DollarSign, BarChart3, Settings,
-  Banknote, PackageX, Activity, RefreshCw, Layers, Truck, Megaphone, Shield, Users,
+  Banknote, PackageX, Activity, RefreshCw, Layers, Truck, Megaphone, Shield, Users, Stethoscope,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -44,6 +44,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: '/dashboard/financial',    label: 'Financeiro',     icon: Banknote },
       { href: '/dashboard/returns',      label: 'Devoluções',     icon: PackageX },
       { href: '/dashboard/performance',  label: 'Performance',    icon: Activity },
+      { href: '/dashboard/funnel-diagnostics', label: 'Diagnóstico de Funil', icon: Stethoscope },
       { href: '/dashboard/reports',      label: 'Relatórios',     icon: BarChart3 },
       { href: '/dashboard/audit',        label: 'Auditoria',      icon: Shield },
     ],

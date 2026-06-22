@@ -34,6 +34,8 @@ model Tenant {
   suppliers     Supplier[]
   purchaseOrders PurchaseOrder[]
   auditLogs     AuditLog[]
+  funnelSnapshots   FunnelSnapshot[]
+  funnelDiagnostics FunnelDiagnostic[]
 
   @@map("tenants")
 }
@@ -157,6 +159,7 @@ model Product {
   kitOf        KitItem[]     @relation("KitProduct")
   orderItems   OrderItem[]
   purchaseOrderItems PurchaseOrderItem[]
+  funnelSnapshots    FunnelSnapshot[]
 
   @@unique([tenantId, sku])
   @@map("products")
@@ -642,6 +645,59 @@ enum PurchaseOrderStatus {
   PARTIAL
   RECEIVED
   CANCELLED
+}
+
+// ─── SALES DIAGNOSTIC ENGINE (SDE) — DIAGNÓSTICO DE FUNIL ────────────────────
+
+model FunnelSnapshot {
+  id          String      @id @default(cuid())
+  tenantId    String
+  productId   String
+  marketplace Marketplace
+  periodStart DateTime
+  periodEnd   DateTime
+  impressions Int         @default(0)
+  clicks      Int         @default(0)
+  visits      Int         @default(0)
+  addToCart   Int         @default(0)
+  orders      Int         @default(0)
+  revenue     Decimal     @db.Decimal(12, 2) @default(0)
+  adSpend     Decimal     @db.Decimal(12, 2) @default(0)
+  unitCost    Decimal?    @db.Decimal(12, 2)
+  createdAt   DateTime    @default(now())
+
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product     Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  diagnostics FunnelDiagnostic[]
+
+  @@unique([tenantId, productId, marketplace, periodStart])
+  @@index([tenantId, periodStart])
+  @@map("funnel_snapshots")
+}
+
+model FunnelDiagnostic {
+  id              String   @id @default(cuid())
+  tenantId        String
+  snapshotId      String
+  gargalo         String
+  causaProvavel   String
+  alertaEconomico String?
+  acoes           Json
+  status          FunnelDiagnosticStatus @default(PENDING)
+  createdAt       DateTime @default(now())
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  snapshot FunnelSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@map("funnel_diagnostics")
+}
+
+enum FunnelDiagnosticStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
 }
 
 // ─── NOTIFICAÇÕES PUSH ────────────────────────────────────────────────────────

@@ -2,9 +2,10 @@ import { PrismaClient } from '@prisma/client'
 
 // Modelos com coluna tenantId — alvo da guarda de multi-tenancy abaixo
 const TENANT_MODELS = new Set([
-  'AuditLog', 'EmailSettings', 'FinancialTransaction', 'Invitation', 'NfeSettings',
-  'Notification', 'Order', 'PriceHistory', 'PricingRule', 'Product', 'PurchaseOrder',
-  'PushToken', 'RepricingRule', 'Return', 'Store', 'Supplier', 'User', 'Warehouse',
+  'AuditLog', 'EmailSettings', 'FinancialTransaction', 'FunnelDiagnostic', 'FunnelSnapshot',
+  'Invitation', 'NfeSettings', 'Notification', 'Order', 'PriceHistory', 'PricingRule',
+  'Product', 'PurchaseOrder', 'PushToken', 'RepricingRule', 'Return', 'Store', 'Supplier',
+  'User', 'Warehouse',
 ])
 
 // Operações em massa onde esquecer o tenantId vaza/afeta dados de outros clientes

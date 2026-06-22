@@ -33,6 +33,18 @@ export class PlanLimitError extends Error {
   }
 }
 
+// Sales Diagnostic Engine — disponível a partir do plano Starter
+export async function assertSdeAccess(tenantId: string) {
+  const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { plan: true } })
+  const plan = PLANS[tenant.plan as PlanKey] ?? PLANS.FREE
+  if (tenant.plan === 'FREE') {
+    throw new PlanLimitError(
+      `O Diagnóstico de Funil (SDE) está disponível a partir do plano Starter. Faça upgrade em Configurações → Plano para liberar.`,
+    )
+  }
+  return plan
+}
+
 export async function assertPlanLimit(tenantId: string, resource: 'stores' | 'users') {
   const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { plan: true } })
   const plan = PLANS[tenant.plan as PlanKey] ?? PLANS.FREE
