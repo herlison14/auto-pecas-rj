@@ -156,6 +156,7 @@ Rotas disponíveis:
 - `/dashboard/financial` — Financeiro
 - `/dashboard/returns` — Devoluções
 - `/dashboard/performance` — Performance
+- `/dashboard/funnel-diagnostics` — Diagnóstico de Funil (SDE)
 - `/dashboard/reports` — Relatórios
 - `/dashboard/audit` — Auditoria
 - `/dashboard/settings` — Configurações
@@ -196,6 +197,7 @@ Todos os prefixos abaixo têm autenticação JWT obrigatória (exceto `/auth`).
 | `/email-settings` | routes/email-settings.ts |
 | `/customers` | routes/customers.ts |
 | `/2fa` | routes/two-factor.ts |
+| `/funnel-diagnostics` | routes/funnel-diagnostics.ts |
 | `/healthz` | index.ts (GET) |
 
 ---
@@ -232,6 +234,7 @@ Inicializados em `startWorkers()` chamado no bootstrap da API.
 | `ASAAS_SANDBOX` | Não (default `false`) | `true` para sandbox/testes |
 | `ENCRYPTION_KEY` | Recomendado | 64 hex chars (32 bytes) para criptografar tokens de marketplace. Gerar: `openssl rand -hex 32` |
 | `NFEIO_API_KEY` / `NFEIO_COMPANY_ID` | Não | NF-e |
+| `ANTHROPIC_API_KEY` | Não | Diagnóstico de funil por IA (SDE). Sem isso, cai para a árvore de regras local |
 
 ### Frontend (`apps/web`)
 
@@ -423,6 +426,15 @@ com `vercel deploy --prebuilt --prod`. Dois gates protegem o pipeline:
 - [x] `viewport` meta tag adicionada em `apps/web/src/app/layout.tsx` (estava ausente)
 - [x] Catálogo: stats em coluna única no mobile (`grid-cols-1 sm:grid-cols-3`) e busca full-width
 - [x] Verificado visualmente com Playwright (390×844 mobile / 1440×900 desktop) — sidebar/hambúrguer alternam corretamente, navegação menu↔seção funciona, sem overflow de página
+
+### Concluído (Sales Diagnostic Engine / Diagnóstico de Funil — jun/2026)
+- [x] Modelos `FunnelSnapshot`/`FunnelDiagnostic` no schema (índices `[tenantId, periodStart]`/`[tenantId, createdAt]`, unique `[tenantId, productId, marketplace, periodStart]`, registrados na guarda de multi-tenancy)
+- [x] Árvore de regras local (`apps/api/src/lib/funnel-rules.ts`) classifica o gargalo (ALCANCE/ATRACAO/CONVERSAO/ABANDONO_CHECKOUT/RENTABILIDADE/SAUDAVEL) e estima ganho em R$ — funciona sem IA
+- [x] Diagnóstico por IA opcional via Claude (`apps/api/src/lib/anthropic.ts`, `ANTHROPIC_API_KEY`) — enriquece causa provável e ações priorizadas; cai para a árvore de regras se a chave não estiver configurada
+- [x] Import CSV/XLSX de métricas de funil (impressões, cliques, visitas, adições ao carrinho, pedidos, receita, ads, custo unitário) com parser tolerante compartilhado com o import de produtos (`apps/api/src/lib/spreadsheet.ts`, extraído por DRY)
+- [x] Rotas `/funnel-diagnostics/*` com RBAC (OWNER/ADMIN) e gate de plano — HTTP 402 no plano FREE (`assertSdeAccess` em `billing.service.ts`)
+- [x] Páginas `/dashboard/funnel-diagnostics` (snapshots + diagnósticos master-detail) e `/dashboard/funnel-diagnostics/import`, item de navegação em "Análise" e ajuda contextual ("?")
+- [x] Testes da árvore de regras (12 casos) — suíte completa da API (27 testes) verde; `tsc --noEmit` limpo em `apps/api` e `apps/web`
 
 ### Pendente — configurações manuais (sem código necessário)
 
