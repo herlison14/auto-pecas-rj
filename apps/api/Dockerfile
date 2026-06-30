@@ -1,0 +1,66 @@
+FROM node:22-alpine AS base
+
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Install dependencies at root (workspace)
+COPY package.json package-lock.json ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/database/package.json ./packages/database/
+COPY packages/integrations/package.json ./packages/integrations/
+COPY packages/nfe/package.json ./packages/nfe/
+
+RUN npm install --workspaces --include-workspace-root
+
+# Copy source
+COPY packages/ ./packages/
+COPY apps/api/ ./apps/api/
+
+# Generate Prisma client
+RUN cd packages/database && npx prisma generate
+
+# Build workspace packages
+RUN cd packages/nfe && npm run build
+RUN cd packages/integrations && npm run build
+
+# Build API
+RUN cd apps/api && npm run build
+
+# ── Production image ──────────────────────────────────────────────────────────
+FROM node:22-alpine AS runner
+
+RUN apk add --no-cache openssl curl
+
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY package.json package-lock.json ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/database/package.json ./packages/database/
+COPY packages/integrations/package.json ./packages/integrations/
+COPY packages/nfe/package.json ./packages/nfe/
+
+RUN npm install --workspaces --include-workspace-root --omit=dev
+
+COPY packages/ ./packages/
+COPY --from=base /app/packages/nfe/dist ./packages/nfe/dist
+COPY --from=base /app/packages/integrations/dist ./packages/integrations/dist
+COPY --from=base /app/apps/api/dist ./apps/api/dist
+COPY --from=base /app/node_modules/.prisma ./node_modules/.prisma
+
+# Run migrations then start server
+COPY apps/api/docker-entrypoint.sh ./apps/api/
+RUN chmod +x ./apps/api/docker-entrypoint.sh
+
+USER nodejs
+
+EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:3001/healthz || exit 1
+
+CMD ["./apps/api/docker-entrypoint.sh"]

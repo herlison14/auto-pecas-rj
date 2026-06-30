@@ -3,6 +3,7 @@ import { prisma } from '@sellsync/database'
 import { MarketplaceAdapterFactory } from '@sellsync/integrations'
 import { inventorySyncQueue, nfeQueue } from './queues'
 import { notifyTenantNewOrder } from '../services/push.service'
+import { getValidToken } from '../lib/token-refresher'
 
 export async function processOrder(job: Job) {
   const { name, data } = job
@@ -11,7 +12,8 @@ export async function processOrder(job: Job) {
     const { storeId, externalId } = data as { storeId: string; externalId: string }
 
     const store = await prisma.store.findUniqueOrThrow({ where: { id: storeId } })
-    const adapter = await MarketplaceAdapterFactory.create(store)
+    const accessToken = await getValidToken(storeId)
+    const adapter = await MarketplaceAdapterFactory.create({ ...store, accessToken })
     const rawOrder = await adapter.getOrder(externalId)
 
     const order = await prisma.order.upsert({
@@ -21,15 +23,15 @@ export async function processOrder(job: Job) {
         storeId,
         externalId,
         marketplace: store.marketplace,
-        status: mapStatus(rawOrder.status, store.marketplace),
+        status: mapStatus(rawOrder.status, store.marketplace) as any,
         buyerName: rawOrder.buyerName,
         buyerEmail: rawOrder.buyerEmail,
-        shippingAddr: rawOrder.shippingAddress,
+        shippingAddr: rawOrder.shippingAddress as any,
         subtotal: rawOrder.subtotal,
         shippingCost: rawOrder.shippingCost,
         total: rawOrder.total,
         paidAt: rawOrder.paidAt,
-        externalData: rawOrder.rawData,
+        externalData: rawOrder.rawData as any,
         items: {
           create: rawOrder.items.map((item) => ({
             externalId: item.externalId,
@@ -42,30 +44,46 @@ export async function processOrder(job: Job) {
         },
       },
       update: {
-        status: mapStatus(rawOrder.status, store.marketplace),
-        externalData: rawOrder.rawData,
+        status: mapStatus(rawOrder.status, store.marketplace) as any,
+        externalData: rawOrder.rawData as any,
       },
     })
 
-    // Reserve stock for new orders
+    // Reserve stock for new orders — batch product lookup to avoid N+1
     if (order.status === 'CONFIRMED') {
-      for (const item of rawOrder.items) {
-        const product = await prisma.product.findFirst({
-          where: { tenantId: store.tenantId, sku: item.sku },
-        })
-        if (product) {
+      const skus = rawOrder.items.map((i) => i.sku)
+      const products = await prisma.product.findMany({
+        where: { tenantId: store.tenantId, sku: { in: skus } },
+        select: { id: true, sku: true },
+      })
+      const productBySku = new Map(products.map((p) => [p.sku, p]))
+
+      await Promise.all(
+        rawOrder.items.map(async (item) => {
+          const product = productBySku.get(item.sku)
+          if (!product) return
           await prisma.stockItem.updateMany({
             where: { productId: product.id },
             data: { reserved: { increment: item.quantity } },
           })
           await inventorySyncQueue.add('sync-product', { productId: product.id, tenantId: store.tenantId })
-        }
-      }
+        }),
+      )
     }
 
-    // Auto-emit NF-e on confirmed + paid orders
-    if (order.status === 'CONFIRMED' && order.paidAt) {
-      await nfeQueue.add('emit-nfe', { orderId: order.id, tenantId: store.tenantId })
+    // Auto-emit NF-e on confirmed + paid orders (se a emissão automática
+    // estiver ligada e os dados fiscais do tenant estiverem configurados)
+    if (order.status === 'CONFIRMED' && order.paidAt && !order.nfeKey) {
+      const nfeSettings = await prisma.nfeSettings.findUnique({
+        where: { tenantId: store.tenantId },
+        select: { autoEmit: true },
+      })
+      if (nfeSettings?.autoEmit) {
+        await nfeQueue.add('emit-nfe', { orderId: order.id, tenantId: store.tenantId, action: 'emit' }, {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+        })
+      }
     }
 
     // Push notification for new orders

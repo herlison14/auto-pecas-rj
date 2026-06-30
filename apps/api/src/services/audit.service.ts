@@ -13,7 +13,9 @@ export interface AuditParams {
 }
 
 export async function logAudit(params: AuditParams) {
-  return prisma.auditLog.create({ data: params })
+  return prisma.auditLog.create({
+    data: { ...params, before: params.before as any, after: params.after as any },
+  })
 }
 
 export async function listAuditLogs(tenantId: string, {

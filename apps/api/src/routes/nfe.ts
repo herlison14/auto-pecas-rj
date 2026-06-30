@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@sellsync/database'
 import { NFeService } from '@sellsync/nfe'
 import { nfeQueue } from '../workers/queues'
+import { requireRole } from '../lib/rbac'
 
 const nfeService = new NFeService()
 
@@ -11,8 +12,10 @@ const settingsSchema = z.object({
   ie: z.string().optional(),
   razaoSocial: z.string().min(2),
   uf: z.string().length(2),
-  crt: z.number().int().min(1).max(3),
+  crt: z.coerce.number().int().min(1).max(3),
   environment: z.enum(['homologacao', 'producao']).default('homologacao'),
+  autoEmit: z.boolean().optional(),
+  autoPrint: z.boolean().optional(),
 })
 
 export async function nfeRoutes(app: FastifyInstance) {
@@ -27,7 +30,7 @@ export async function nfeRoutes(app: FastifyInstance) {
     return settings ?? {}
   })
 
-  app.put('/settings', async (req) => {
+  app.put('/settings', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req) => {
     const { tenantId } = req.user as { tenantId: string }
     const body = settingsSchema.parse(req.body)
     return prisma.nfeSettings.upsert({
@@ -38,7 +41,7 @@ export async function nfeRoutes(app: FastifyInstance) {
   })
 
   // Emitir NF-e para um pedido
-  app.post('/orders/:orderId/emit', async (req, reply) => {
+  app.post('/orders/:orderId/emit', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { orderId } = req.params as { orderId: string }
     const { tenantId } = req.user as { tenantId: string }
 
@@ -52,7 +55,7 @@ export async function nfeRoutes(app: FastifyInstance) {
   })
 
   // Cancelar NF-e
-  app.post('/orders/:orderId/cancel', async (req, reply) => {
+  app.post('/orders/:orderId/cancel', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { orderId } = req.params as { orderId: string }
     const { tenantId } = req.user as { tenantId: string }
     const { reason } = z.object({ reason: z.string().min(15) }).parse(req.body)
@@ -62,7 +65,7 @@ export async function nfeRoutes(app: FastifyInstance) {
   })
 
   // Emitir NF-e em lote
-  app.post('/batch-emit', async (req, reply) => {
+  app.post('/batch-emit', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { tenantId } = req.user as { tenantId: string }
     const { orderIds } = z.object({ orderIds: z.array(z.string()).min(1).max(100) }).parse(req.body)
 
@@ -81,6 +84,29 @@ export async function nfeRoutes(app: FastifyInstance) {
       queued: jobs.length,
       orderIds,
     })
+  })
+
+  // Fila de impressão: NF-es autorizadas que ainda não foram impressas.
+  // O frontend (AutoPrintAgent) consulta periodicamente e dispara a impressão.
+  app.get('/print-queue', async (req) => {
+    const { tenantId } = req.user as { tenantId: string }
+    return prisma.order.findMany({
+      where: { tenantId, nfeStatus: 'AUTHORIZED', nfePrintedAt: null },
+      select: { id: true, externalId: true, buyerName: true, total: true, marketplace: true },
+      orderBy: { updatedAt: 'asc' },
+      take: 10,
+    })
+  })
+
+  // Marca a NF-e do pedido como impressa (chamado após disparar a impressão)
+  app.post('/orders/:orderId/printed', async (req) => {
+    const { orderId } = req.params as { orderId: string }
+    const { tenantId } = req.user as { tenantId: string }
+    await prisma.order.updateMany({
+      where: { id: orderId, tenantId },
+      data: { nfePrintedAt: new Date() },
+    })
+    return { ok: true }
   })
 
   // Download do PDF da NF-e

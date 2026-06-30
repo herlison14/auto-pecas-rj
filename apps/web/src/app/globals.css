@@ -111,3 +111,20 @@
 .animate-fade-in-scale { animation: fade-in-scale 0.25s ease-out both; }
 .animate-slide-in-left { animation: slide-in-left 0.25s ease-out both; }
 .animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
+
+/* Respeita preferência do usuário por menos movimento (WCAG 2.3.3 / LBI) */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-in-scale,
+  .animate-slide-in-left,
+  .animate-glow-pulse,
+  .animate-shimmer {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Hover shadow para cards */
+.shadow-card-hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(99,102,241,0.1);
+}

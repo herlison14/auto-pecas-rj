@@ -82,7 +82,7 @@ export default function CatalogPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Anúncios ativos', value: stats?.activeListings ?? '—', icon: Layers, color: 'bg-blue-500/15 text-blue-400' },
           { label: 'Sincronizados (24h)', value: stats?.recentlySynced ?? '—', icon: CheckCircle, color: 'bg-emerald-500/15 text-emerald-400' },
@@ -122,7 +122,8 @@ export default function CatalogPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+<table className="w-full text-sm">
               <thead className="bg-amber-500/10/50 border-b border-amber-500/20">
                 <tr>
                   <th className="w-10 px-4 py-2.5" />
@@ -181,6 +182,7 @@ export default function CatalogPage() {
                 })}
               </tbody>
             </table>
+</div>
           </CardContent>
         </Card>
       )}
@@ -188,9 +190,9 @@ export default function CatalogPage() {
       {/* All listings */}
       <Card className="overflow-hidden">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <CardTitle className="text-sm">Todos os Anúncios</CardTitle>
-            <div className="relative w-56">
+            <div className="relative w-full sm:w-56">
               <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 value={search}
@@ -201,7 +203,8 @@ export default function CatalogPage() {
             </div>
           </div>
         </CardHeader>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+<table className="w-full text-sm">
           <thead className="border-b bg-muted/40">
             <tr>
               {['Produto', 'Canal', 'Preço', 'Status', 'Última sync', ''].map((h) => (
@@ -263,6 +266,7 @@ export default function CatalogPage() {
             })}
           </tbody>
         </table>
+</div>
       </Card>
     </div>
   )

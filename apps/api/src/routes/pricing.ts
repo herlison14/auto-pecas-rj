@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { PricingService } from '../services/pricing.service'
 import type { Marketplace } from '@sellsync/database'
+import { requireRole } from '../lib/rbac'
 
 const ruleSchema = z.object({
   name: z.string().min(1),
@@ -23,14 +24,14 @@ export async function pricingRoutes(app: FastifyInstance) {
     return service.listRules(tenantId)
   })
 
-  app.post('/rules', async (req, reply) => {
+  app.post('/rules', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { tenantId } = req.user as { tenantId: string }
     const body = ruleSchema.parse(req.body)
     const rule = await service.createRule(tenantId, body as Parameters<typeof service.createRule>[1])
     return reply.code(201).send(rule)
   })
 
-  app.put('/rules/:id', async (req) => {
+  app.put('/rules/:id', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req) => {
     const { tenantId } = req.user as { tenantId: string }
     const { id } = req.params as { id: string }
     const body = ruleSchema.partial().parse(req.body)

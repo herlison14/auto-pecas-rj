@@ -1,12 +1,14 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { api } from './api'
+import * as Sentry from '@sentry/nextjs'
 
 const COOKIE_NAME = 'sellsync:token'
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7 // 7 days
 
+// Cookie de SESSÃO (sem max-age): morre quando o navegador fecha —
+// o login com e-mail e senha é obrigatório a cada nova sessão.
 export function setAuthCookie(token: string) {
-  document.cookie = `${COOKIE_NAME}=${token}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`
+  document.cookie = `${COOKIE_NAME}=${token}; path=/; SameSite=Lax`
 }
 
 export function clearAuthCookie() {
@@ -49,7 +51,7 @@ export const useAuth = create<AuthState>()(
       login: async (email, password) => {
         const { data } = await api.post('/auth/login', { email, password })
         if (data.requires2fa) return { requires2fa: true, tempToken: data.tempToken }
-        localStorage.setItem('sellsync:token', data.token)
+        sessionStorage.setItem('sellsync:token', data.token)
         setAuthCookie(data.token)
         set({ token: data.token, user: data.user, tenant: data.tenant, isAuthenticated: true })
         return {}
@@ -57,15 +59,19 @@ export const useAuth = create<AuthState>()(
 
       register: async (tenantName, name, email, password) => {
         const { data } = await api.post('/auth/register', { tenantName, name, email, password })
-        localStorage.setItem('sellsync:token', data.token)
+        sessionStorage.setItem('sellsync:token', data.token)
         setAuthCookie(data.token)
         set({ token: data.token, user: data.user, tenant: data.tenant, isAuthenticated: true })
       },
 
       logout: () => {
+        sessionStorage.removeItem('sellsync:token')
+        // Limpa também resquícios do esquema antigo (localStorage)
         localStorage.removeItem('sellsync:token')
+        localStorage.removeItem('sellsync:auth')
         clearAuthCookie()
         set({ token: null, user: null, tenant: null, isAuthenticated: false })
+        Sentry.setUser(null)
       },
 
       hydrate: async () => {
@@ -81,6 +87,8 @@ export const useAuth = create<AuthState>()(
     }),
     {
       name: 'sellsync:auth',
+      // sessionStorage: a sessão acaba quando o navegador fecha — login obrigatório
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (s) => ({ token: s.token, user: s.user, tenant: s.tenant }),
       onRehydrateStorage: () => (state) => {
         if (state?.token) setAuthCookie(state.token)

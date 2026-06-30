@@ -103,18 +103,13 @@ export async function runRepricingForTenant(tenantId: string) {
     newPrice = newPrice.toDecimalPlaces(2)
 
     if (!newPrice.equals(currentPrice)) {
-      // Update listing price
-      await prisma.listing.update({ where: { id: listing.id }, data: { price: newPrice } })
-
-      // Record price history
-      await prisma.priceHistory.create({
-        data: {
-          tenantId,
-          listingId: listing.id,
-          price: newPrice,
-          source: `rule:${rule.name}`,
-        },
-      })
+      await prisma.$transaction([
+        prisma.listing.update({ where: { id: listing.id }, data: { price: newPrice } }),
+        prisma.priceHistory.create({
+          data: { tenantId, listingId: listing.id, price: newPrice, source: `rule:${rule.name}` },
+        }),
+        prisma.repricingRule.update({ where: { id: rule.id }, data: { lastRunAt: new Date() } }),
+      ])
 
       results.push({
         ruleId: rule.id,
@@ -123,9 +118,9 @@ export async function runRepricingForTenant(tenantId: string) {
         newPrice: newPrice.toNumber(),
         reason,
       })
+    } else {
+      await prisma.repricingRule.update({ where: { id: rule.id }, data: { lastRunAt: new Date() } })
     }
-
-    await prisma.repricingRule.update({ where: { id: rule.id }, data: { lastRunAt: new Date() } })
   }
 
   return results

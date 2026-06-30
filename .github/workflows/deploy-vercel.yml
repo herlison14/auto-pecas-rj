@@ -6,47 +6,103 @@ on:
       - claude/upseller-platform-analysis-n10NA
       - main
   workflow_dispatch:
+    inputs:
+      vercel_project:
+        description: 'Nome do projeto no Vercel'
+        required: false
+        default: 'herlison14-sellsync'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_PROJECT: ${{ github.event.inputs.vercel_project || 'herlison14-sellsync' }}
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate token
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Secret VERCEL_TOKEN não configurado no repositório (Settings → Secrets → Actions)."
+            exit 1
+          fi
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: apps/web/package-lock.json
-
-      - name: Install dependencies
-        run: npm install
-        working-directory: apps/web
+          node-version: 22
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
+      # apps/web tem package-lock.json próprio e builda standalone —
+      # instalamos só dentro dele para reproduzir um build limpo.
+      - name: Install dependencies (apps/web only)
+        run: npm install --no-audit --no-fund
+        working-directory: apps/web
+
+      - name: Link Vercel project
+        run: vercel link --yes --project "$VERCEL_PROJECT" --token "$VERCEL_TOKEN"
+        working-directory: apps/web
+
       - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
         working-directory: apps/web
 
-      - name: Build project
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      # Build LOCAL no CI: o build remoto do Vercel estava ignorando o
+      # postcss.config.mjs e servindo CSS cru com @tailwind (site sem estilo).
+      # Com --prebuilt subimos exatamente o que compilamos aqui.
+      - name: Build (local, Build Output API)
+        run: vercel build --prod --token "$VERCEL_TOKEN"
         working-directory: apps/web
 
-      - name: Deploy to Vercel
+      - name: Verify compiled CSS before deploy
+        run: |
+          CSS=$(find .vercel/output -name '*.css' -path '*static/css*' | head -1)
+          if [ -z "$CSS" ]; then
+            echo "::error::Nenhum CSS no build output!"
+            exit 1
+          fi
+          echo "CSS: $CSS ($(wc -c < "$CSS") bytes)"
+          if grep -q '@tailwind' "$CSS"; then
+            echo "::error::CSS cru com @tailwind — PostCSS não rodou no build!"
+            exit 1
+          fi
+          if ! grep -q '\.flex{display:flex}' "$CSS"; then
+            echo "::error::Utilitários Tailwind ausentes no CSS compilado!"
+            exit 1
+          fi
+          echo "✅ CSS compilado com utilitários Tailwind"
+        working-directory: apps/web
+
+      - name: Deploy to Vercel (prebuilt)
         id: deploy
         run: |
-          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          URL=$(vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN")
           echo "url=$URL" >> $GITHUB_OUTPUT
           echo "✅ Deployed: $URL"
         working-directory: apps/web
 
-      - name: Comment deployment URL
-        if: github.event_name == 'push'
-        run: echo "🚀 Production URL -> ${{ steps.deploy.outputs.url }}"
+      - name: Verify production CSS after deploy
+        run: |
+          sleep 15
+          PROD=https://herlison14-sellsync.vercel.app
+          curl -s "$PROD/login" -o page.html
+          CSS_PATH=$(grep -o '/_next/static/css/[^"]*\.css' page.html | head -1)
+          echo "CSS em produção: $CSS_PATH"
+          if [ -z "$CSS_PATH" ]; then
+            echo "::error::Nenhum link de CSS no HTML de produção!"
+            exit 1
+          fi
+          curl -s "$PROD$CSS_PATH" -o prod.css
+          echo "Tamanho: $(wc -c < prod.css) bytes"
+          if grep -q '@tailwind' prod.css; then
+            echo "::error::Produção ainda serve CSS cru com @tailwind!"
+            exit 1
+          fi
+          if ! grep -q '\.flex{display:flex}' prod.css; then
+            echo "::error::Produção sem utilitários Tailwind no CSS!"
+            exit 1
+          fi
+          echo "✅ Produção servindo CSS Tailwind compilado"

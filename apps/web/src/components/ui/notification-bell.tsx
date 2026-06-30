@@ -59,18 +59,25 @@ export function NotificationBell() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
+        aria-label={unread > 0 ? `Notificações — ${unread} não lida${unread > 1 ? 's' : ''}` : 'Notificações'}
+        aria-expanded={open}
+        aria-haspopup="dialog"
         className="relative flex h-8 w-8 items-center justify-center rounded-lg hover:bg-accent transition-colors"
       >
         <Bell className="h-4 w-4 text-muted-foreground" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+          <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border bg-card shadow-lg animate-fade-in">
+        <div
+          role="dialog"
+          aria-label="Notificações"
+          className="absolute right-0 top-10 z-50 w-80 rounded-xl border bg-card shadow-lg animate-fade-in"
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <p className="text-sm font-semibold">Notificações</p>
             {unread > 0 && (
@@ -109,10 +116,11 @@ export function NotificationBell() {
               const Icon = TYPE_ICON[n.type] ?? Info
               const colorCls = TYPE_COLOR[n.type] ?? 'text-muted-foreground bg-muted'
               return (
-                <div
+                <button
                   key={n.id}
+                  type="button"
                   className={cn(
-                    'flex gap-3 px-4 py-3 hover:bg-muted/40 transition-colors cursor-pointer border-b last:border-0',
+                    'w-full text-left flex gap-3 px-4 py-3 hover:bg-muted/40 transition-colors border-b last:border-0',
                     !n.isRead && 'bg-primary/5'
                   )}
                   onClick={() => {
@@ -137,7 +145,7 @@ export function NotificationBell() {
                       {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: ptBR })}
                     </p>
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>

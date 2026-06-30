@@ -92,14 +92,15 @@ function NfeTab() {
     queryKey: ['nfe-settings'],
     queryFn: async () => (await api.get('/nfe/settings')).data,
   })
-  const [form, setForm] = useState<Record<string, string>>({})
+  const [form, setForm] = useState<Record<string, string | boolean>>({})
 
   const save = useMutation({
     mutationFn: async () => api.put('/nfe/settings', { ...settings, ...form }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['nfe-settings'] }),
   })
 
-  const value = (field: string, fallback = '') => form[field] ?? settings?.[field] ?? fallback
+  const value = (field: string, fallback = '') => String(form[field] ?? settings?.[field] ?? fallback)
+  const boolValue = (field: string) => Boolean(form[field] ?? settings?.[field] ?? true)
 
   const selectCls = 'flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
@@ -141,6 +142,27 @@ function NfeTab() {
             <option value="homologacao">Homologação (testes)</option>
             <option value="producao">Produção (real)</option>
           </select>
+        </div>
+
+        <div className="space-y-2 rounded-lg border p-4">
+          <p className="text-sm font-semibold">Automação</p>
+          {[
+            { field: 'autoEmit',  label: 'Emitir NF-e automaticamente', desc: 'Gera a nota assim que o pedido for confirmado e pago' },
+            { field: 'autoPrint', label: 'Imprimir DANFE automaticamente', desc: 'Abre a impressão assim que a nota for autorizada (qualquer impressora instalada: térmica, jato de tinta ou laser)' },
+          ].map(({ field, label, desc }) => (
+            <label key={field} className="flex items-start gap-3 cursor-pointer py-1">
+              <input
+                type="checkbox"
+                checked={boolValue(field)}
+                onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.checked }))}
+                className="mt-1 h-4 w-4 accent-indigo-500"
+              />
+              <span>
+                <span className="block text-sm font-medium">{label}</span>
+                <span className="block text-xs text-muted-foreground">{desc}</span>
+              </span>
+            </label>
+          ))}
         </div>
 
         <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full">
@@ -428,7 +450,8 @@ function EmailTab() {
 }
 
 function PlanTab() {
-  const { data: currentPlan } = useQuery({
+  const qc = useQueryClient()
+  const { data: currentPlan, isLoading } = useQuery({
     queryKey: ['current-plan'],
     queryFn: async () => (await api.get('/billing/plan')).data,
   })
@@ -444,48 +467,124 @@ function PlanTab() {
     },
   })
 
-  const portal = useMutation({
-    mutationFn: async () => {
-      const { data } = await api.post('/billing/portal')
-      window.location.href = data.url
-    },
+  const cancel = useMutation({
+    mutationFn: async () => api.post('/billing/cancel'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['current-plan'] }),
   })
 
-  const PRICE: Record<string, string> = { FREE: 'Grátis', STARTER: 'R$ 79/mês', GROWTH: 'R$ 199/mês', PRO: 'R$ 399/mês' }
+  const PRICE: Record<string, string> = {
+    FREE: 'Grátis', STARTER: 'R$ 79/mês', GROWTH: 'R$ 199/mês', PRO: 'R$ 399/mês',
+  }
+
+  const statusColor: Record<string, string> = {
+    ACTIVE: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    OVERDUE: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    INACTIVE: 'text-muted-foreground bg-muted/30 border-border',
+  }
+  const statusLabel: Record<string, string> = {
+    ACTIVE: 'Ativa', OVERDUE: 'Pagamento pendente', INACTIVE: 'Inativa',
+  }
+
+  if (isLoading) return <div className="h-40 animate-pulse rounded-lg bg-muted/20" />
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
-        <span>Plano atual: <strong>{currentPlan?.name ?? 'Free'}</strong></span>
+    <div className="max-w-2xl space-y-5">
+      {/* Current plan banner */}
+      <div className="rounded-xl border px-5 py-4 space-y-2" style={{ borderColor: 'rgba(99,102,241,0.25)', background: 'rgba(99,102,241,0.06)' }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest">Plano atual</p>
+            <p className="text-xl font-bold mt-0.5">{currentPlan?.name ?? 'Free'}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold" style={{ color: '#6366f1' }}>{PRICE[currentPlan?.key ?? 'FREE']}</p>
+            {currentPlan?.subscriptionStatus && (
+              <span className={cn('mt-1 inline-block text-xs font-medium px-2 py-0.5 rounded-full border', statusColor[currentPlan.subscriptionStatus] ?? '')}>
+                {statusLabel[currentPlan.subscriptionStatus] ?? currentPlan.subscriptionStatus}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Overdue warning */}
+        {currentPlan?.subscriptionStatus === 'OVERDUE' && currentPlan?.nextPaymentUrl && (
+          <div className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+            <span>Pagamento em atraso — regularize para não perder o acesso.</span>
+            <a href={currentPlan.nextPaymentUrl} target="_blank" rel="noopener noreferrer"
+              className="ml-3 shrink-0 font-semibold underline underline-offset-2">
+              Pagar agora
+            </a>
+          </div>
+        )}
+
+        {/* Cancel button */}
         {currentPlan?.key !== 'FREE' && (
-          <Button variant="link" size="sm" className="h-auto p-0" onClick={() => portal.mutate()}>
-            Gerenciar assinatura
-          </Button>
+          <div className="pt-1">
+            <button
+              onClick={() => { if (confirm('Cancelar a assinatura? Você voltará ao plano Free imediatamente.')) cancel.mutate() }}
+              disabled={cancel.isPending}
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors underline underline-offset-2"
+            >
+              {cancel.isPending ? 'Cancelando...' : 'Cancelar assinatura'}
+            </button>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {(plans ?? []).filter((p: { key: string }) => p.key !== 'FREE').map((plan: { key: string; name: string; limits: Record<string, number> }) => (
-          <Card key={plan.key} className={cn(currentPlan?.key === plan.key ? 'border-primary ring-2 ring-primary/20' : '')}>
-            <CardContent className="p-5 space-y-3">
-              <div className="flex justify-between items-center">
-                <h3 className="font-bold text-lg">{plan.name}</h3>
-                {currentPlan?.key === plan.key && <Badge variant="info" className="text-xs">Atual</Badge>}
+      {/* Payment methods info */}
+      <div className="flex items-center gap-3 rounded-lg border px-4 py-3 text-xs text-muted-foreground"
+        style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        <span className="font-medium text-foreground">Formas de pagamento:</span>
+        <span className="px-2 py-0.5 rounded bg-muted/50 font-mono">PIX</span>
+        <span className="px-2 py-0.5 rounded bg-muted/50 font-mono">Boleto</span>
+        <span className="px-2 py-0.5 rounded bg-muted/50 font-mono">Cartão</span>
+        <span className="ml-auto">Processado por <strong>Asaas</strong></span>
+      </div>
+
+      {/* Plan cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {(plans ?? [])
+          .filter((p: { key: string }) => p.key !== 'FREE')
+          .map((plan: { key: string; name: string; price: number; limits: Record<string, number> }) => {
+            const isCurrent = currentPlan?.key === plan.key
+            return (
+              <div key={plan.key}
+                className={cn('rounded-xl border p-5 space-y-4 transition-all', isCurrent ? 'ring-2' : 'hover:border-primary/40')}
+                style={{
+                  borderColor: isCurrent ? '#6366f1' : 'rgba(255,255,255,0.08)',
+                  background: isCurrent ? 'rgba(99,102,241,0.08)' : 'rgba(15,15,25,0.7)',
+                  boxShadow: isCurrent ? '0 0 0 2px rgba(99,102,241,0.25)' : undefined,
+                }}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-bold text-base">{plan.name}</h3>
+                    <p className="text-xl font-bold mt-1" style={{ color: '#6366f1' }}>{PRICE[plan.key]}</p>
+                  </div>
+                  {isCurrent && (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8' }}>
+                      Atual
+                    </span>
+                  )}
+                </div>
+
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li>✓ {plan.limits.orders === -1 ? 'Pedidos ilimitados' : `${plan.limits.orders.toLocaleString('pt-BR')} pedidos/mês`}</li>
+                  <li>✓ {plan.limits.stores === -1 ? 'Canais ilimitados' : `${plan.limits.stores} canais`}</li>
+                  <li>✓ {plan.limits.users === -1 ? 'Usuários ilimitados' : `${plan.limits.users} usuários`}</li>
+                </ul>
+
+                {!isCurrent && (
+                  <button
+                    onClick={() => checkout.mutate(plan.key)}
+                    disabled={checkout.isPending}
+                    className="w-full rounded-lg py-2 text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+                    style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                    {checkout.isPending ? 'Aguarde...' : `Assinar ${plan.name}`}
+                  </button>
+                )}
               </div>
-              <p className="text-2xl font-bold text-primary">{PRICE[plan.key]}</p>
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                <li>✓ {plan.limits.orders === -1 ? 'Pedidos ilimitados' : `${plan.limits.orders.toLocaleString()} pedidos/mês`}</li>
-                <li>✓ {plan.limits.stores === -1 ? 'Canais ilimitados' : `${plan.limits.stores} canais`}</li>
-                <li>✓ {plan.limits.users === -1 ? 'Usuários ilimitados' : `${plan.limits.users} usuários`}</li>
-              </ul>
-              {currentPlan?.key !== plan.key && (
-                <Button className="w-full" onClick={() => checkout.mutate(plan.key)} disabled={checkout.isPending}>
-                  Assinar {plan.name}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+            )
+          })}
       </div>
     </div>
   )

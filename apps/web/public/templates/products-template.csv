@@ -1,3 +1,3 @@
-sku,name,description,brand,ncm,gtin,weight,height,width,length,images,stock
-PROD-001,Produto Exemplo,Descrição do produto,Marca Exemplo,12345678,7891234567890,0.5,10,20,30,https://exemplo.com/imagem.jpg,100
-PROD-002,Segundo Produto,,Outra Marca,87654321,,1.2,15,25,40,,50
+﻿SKU;Nome;Descrição;Marca;NCM;EAN;Peso (kg);Altura (cm);Largura (cm);Comprimento (cm);Imagens;Estoque
+PROD-001;Produto Exemplo;Descrição do produto;Marca Exemplo;12345678;7891234567890;0.5;10;20;30;https://exemplo.com/imagem.jpg;100
+PROD-002;Segundo Produto;;Outra Marca;87654321;;1.2;15;25;40;;50

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '@sellsync/database'
 import { sendEmailNotification } from '../services/email.service'
+import { requireRole } from '../lib/rbac'
 
 const settingsSchema = z.object({
   provider: z.enum(['smtp', 'resend']).default('smtp'),
@@ -30,7 +31,7 @@ export async function emailSettingsRoutes(app: FastifyInstance) {
     return s ?? {}
   })
 
-  app.put('/', async (req, reply) => {
+  app.put('/', { preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
     const { tenantId } = req.user as { tenantId: string }
     const body = settingsSchema.parse(req.body)
     const existing = await prisma.emailSettings.findUnique({ where: { tenantId } })

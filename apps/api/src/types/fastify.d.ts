@@ -4,15 +4,19 @@ declare module '@fastify/jwt' {
   interface FastifyJWT {
     payload: {
       userId: string
-      tenantId: string
-      role: 'OWNER' | 'ADMIN' | 'OPERATOR'
+      tenantId?: string
+      role?: 'OWNER' | 'ADMIN' | 'OPERATOR'
+      name?: string
       pending2fa?: boolean
+      purpose?: string
     }
     user: {
       userId: string
       tenantId: string
       role: 'OWNER' | 'ADMIN' | 'OPERATOR'
+      name: string
       pending2fa?: boolean
+      purpose?: string
     }
   }
 }

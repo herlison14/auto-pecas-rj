@@ -40,9 +40,27 @@ export async function ordersRoutes(app: FastifyInstance) {
 
   app.post('/:id/ship', async (req) => {
     const { id } = req.params as { id: string }
-    const body = z.object({ trackingCode: z.string(), carrier: z.string() }).parse(req.body)
+    const body = z.object({
+      trackingCode: z.string().optional(),
+      carrier: z.string().optional(),
+    }).parse(req.body ?? {})
     const tenantId = (req.user as { tenantId: string }).tenantId
     return service.markShipped({ tenantId, orderId: id, ...body })
+  })
+
+  app.get('/:id/label', async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const tenantId = (req.user as { tenantId: string }).tenantId
+    try {
+      const pdf = await service.getShippingLabel({ tenantId, orderId: id })
+      return reply.type('application/pdf').send(pdf)
+    } catch (err) {
+      const { LabelNotSupportedError } = await import('../services/order.service')
+      if (err instanceof LabelNotSupportedError) {
+        return reply.code(501).send({ error: 'NOT_SUPPORTED', message: err.message })
+      }
+      throw err
+    }
   })
 
   app.post('/bulk/print-labels', async (req, reply) => {

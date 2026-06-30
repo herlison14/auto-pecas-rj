@@ -1,0 +1,67 @@
+name: Diagnose Production
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/upseller-platform-analysis-n10NA
+    paths:
+      - '.diagnose-trigger'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Proxy /backend/healthz via Vercel (prova build novo + proxy)
+        run: |
+          echo "=== GET https://herlison14-sellsync.vercel.app/backend/healthz ==="
+          curl -si --max-time 120 https://herlison14-sellsync.vercel.app/backend/healthz | head -20
+
+      - name: 2. Registro end-to-end via proxy
+        run: |
+          echo "=== POST /backend/auth/register via Vercel ==="
+          curl -si -X POST https://herlison14-sellsync.vercel.app/backend/auth/register \
+            -H "Content-Type: application/json" \
+            -d "{\"tenantName\":\"Probe CI\",\"name\":\"Probe\",\"email\":\"probe-$(date +%s)@example.com\",\"password\":\"Probe12345!\"}" \
+            --max-time 120 | head -40
+
+      - name: 3. CSS compilado em produção
+        run: |
+          echo "=== Procurando link de CSS na página /login ==="
+          curl -s https://herlison14-sellsync.vercel.app/login -o page.html
+          CSS_PATH=$(grep -o '/_next/static/css/[^"]*\.css' page.html | head -1)
+          echo "CSS: $CSS_PATH"
+          if [ -z "$CSS_PATH" ]; then
+            echo "::error::Nenhum arquivo CSS no HTML — Tailwind não compilou!"
+            exit 1
+          fi
+          # Pega apenas os primeiros 2KB do CSS (antes dos source maps)
+          CSS_HEAD=$(curl -s "https://herlison14-sellsync.vercel.app$CSS_PATH" | head -c 2048)
+          echo "=== Primeiros 200 chars ==="
+          echo "$CSS_HEAD" | head -c 200
+          echo ""
+          # CSS compilado começa com @font-face ou regras CSS válidas, nunca com @tailwind
+          if echo "$CSS_HEAD" | grep -q '^@tailwind'; then
+            echo "::error::CSS cru com @tailwind — PostCSS não processou!"
+            exit 1
+          fi
+          # Verifica que tem conteúdo CSS real (pelo menos 500 bytes)
+          CSS_SIZE=$(curl -s "https://herlison14-sellsync.vercel.app$CSS_PATH" | wc -c)
+          echo "Tamanho do CSS: $CSS_SIZE bytes"
+          if [ "$CSS_SIZE" -lt 500 ]; then
+            echo "::error::CSS muito pequeno ($CSS_SIZE bytes) — Tailwind provavelmente não compilou!"
+            exit 1
+          fi
+          echo "✅ CSS compilado corretamente ($CSS_SIZE bytes)"
+
+      - name: 4. API direta (Render) — healthz e registro
+        run: |
+          echo "=== GET /healthz direto ==="
+          curl -si --max-time 120 https://auto-pecas-rj.onrender.com/healthz | head -5
+          echo ""
+          echo "=== POST /auth/register direto ==="
+          curl -si -X POST https://auto-pecas-rj.onrender.com/auth/register \
+            -H "Origin: https://herlison14-sellsync.vercel.app" \
+            -H "Content-Type: application/json" \
+            -d "{\"tenantName\":\"Probe Direct\",\"name\":\"Probe\",\"email\":\"probe-direct-$(date +%s)@example.com\",\"password\":\"Probe12345!\"}" \
+            --max-time 120 | tail -5

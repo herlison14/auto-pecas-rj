@@ -43,7 +43,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const { data } = await api.post('/2fa/verify', { token: totpCode, tempToken })
-      localStorage.setItem('sellsync:token', data.token)
+      sessionStorage.setItem('sellsync:token', data.token)
       setAuthCookie(data.token)
       router.push('/dashboard')
     } catch {
@@ -130,8 +130,9 @@ export default function LoginPage() {
         {error && <ErrorBox message={error} />}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Field label="E-mail">
+          <Field label="E-mail" id="login-email">
             <TextInput
+              id="login-email"
               type="email"
               value={email}
               onChange={(v) => setEmail(v)}
@@ -141,9 +142,10 @@ export default function LoginPage() {
             />
           </Field>
 
-          <Field label="Senha">
+          <Field label="Senha" id="login-password">
             <div className="relative">
               <TextInput
+                id="login-password"
                 type={showPwd ? 'text' : 'password'}
                 value={password}
                 onChange={(v) => setPassword(v)}
@@ -153,6 +155,7 @@ export default function LoginPage() {
               />
               <button
                 type="button"
+                aria-label={showPwd ? 'Ocultar senha' : 'Mostrar senha'}
                 onClick={() => setShowPwd(!showPwd)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
                 style={{ color: '#475569' }}
@@ -163,6 +166,12 @@ export default function LoginPage() {
               </button>
             </div>
           </Field>
+
+          <div className="flex justify-end -mt-1">
+            <Link href="/forgot-password" className="text-xs font-medium" style={{ color: '#64748b' }}>
+              Esqueci minha senha
+            </Link>
+          </div>
 
           <PrimaryButton disabled={loading} className="mt-2">
             {loading
@@ -186,7 +195,7 @@ export default function LoginPage() {
       </Card>
 
       {/* Footer branding */}
-      <p className="mt-6 text-center text-xs" style={{ color: '#1e293b' }}>
+      <p className="mt-6 text-center text-xs" style={{ color: '#334155' }}>
         ML · Shopee · Amazon · Magalu · Americanas
       </p>
     </Page>
@@ -228,10 +237,10 @@ function Card({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-medium uppercase tracking-widest" style={{ color: '#475569' }}>
+      <label htmlFor={id} className="text-xs font-medium uppercase tracking-widest" style={{ color: '#475569' }}>
         {label}
       </label>
       {children}
@@ -239,12 +248,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-function TextInput({ type, value, onChange, placeholder, autoFocus, required, className }: {
-  type: string; value: string; onChange: (v: string) => void
+function TextInput({ id, type, value, onChange, placeholder, autoFocus, required, className }: {
+  id?: string; type: string; value: string; onChange: (v: string) => void
   placeholder?: string; autoFocus?: boolean; required?: boolean; className?: string
 }) {
   return (
     <input
+      id={id}
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -294,10 +304,12 @@ function PrimaryButton({ children, disabled, className }: {
 function ErrorBox({ message }: { message: string }) {
   return (
     <div
+      role="alert"
+      aria-live="assertive"
       className="flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm mb-4"
       style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#fca5a5' }}
     >
-      <AlertCircle className="h-4 w-4 shrink-0" /> {message}
+      <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" /> {message}
     </div>
   )
 }
@@ -306,7 +318,7 @@ function Divider() {
   return (
     <div className="flex items-center gap-3 my-5">
       <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-      <span className="text-xs" style={{ color: '#1e293b' }}>ou</span>
+      <span className="text-xs" style={{ color: '#475569' }}>ou</span>
       <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
     </div>
   )

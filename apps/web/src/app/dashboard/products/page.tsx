@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, Upload, Search, Trash2, Package } from 'lucide-react'
+import { Plus, Upload, Search, Trash2, Package, Download } from 'lucide-react'
 import { useProducts, useDeleteProduct } from '@/hooks/use-products'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +26,11 @@ export default function ProductsPage() {
           <p className="text-sm text-muted-foreground mt-0.5">Catálogo e publicação em marketplaces</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <a href="/templates/products-template.xlsx" download>
+              <Download className="h-4 w-4" /> Modelo de planilha
+            </a>
+          </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href="/dashboard/products/import">
               <Upload className="h-4 w-4" /> Importar

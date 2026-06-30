@@ -23,6 +23,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: { componentStack: string }) {
     console.error('[ErrorBoundary]', error, info.componentStack)
+    // Reporta para o Sentry (no-op se SENTRY_DSN não estiver configurado)
+    import('@sentry/nextjs').then(({ captureException }) => {
+      captureException(error, { extra: { componentStack: info.componentStack } })
+    }).catch(() => {})
   }
 
   reset = () => this.setState({ hasError: false, message: '' })

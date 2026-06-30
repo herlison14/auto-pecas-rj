@@ -12,13 +12,13 @@ import {
 import { requireRole } from '../lib/rbac'
 
 const ruleSchema = z.object({
-  name:             z.string().min(1).max(100),
-  marketplace:      z.string().optional(),
-  strategy:         z.enum(['LOWEST', 'AVERAGE', 'FIXED_MARGIN', 'CUSTOM']),
-  margin:           z.number().min(0).max(100).optional(),
-  minPrice:         z.number().positive().optional(),
-  maxPrice:         z.number().positive().optional(),
-  active:           z.boolean().optional(),
+  name:         z.string().min(1).max(100),
+  marketplace:  z.string().optional(),
+  strategy:     z.enum(['MAINTAIN_MARGIN', 'MATCH_LOWEST', 'BEAT_BY_PCT', 'FIXED_MARKUP']),
+  targetMargin: z.number().min(0).max(100).optional(),
+  minPrice:     z.number().positive().optional(),
+  maxPrice:     z.number().positive().optional(),
+  isActive:     z.boolean().optional(),
 })
 
 export async function repricingRoutes(app: FastifyInstance) {
@@ -28,7 +28,7 @@ export async function repricingRoutes(app: FastifyInstance) {
 
   app.post('/rules', auth, async (req, reply) => {
     const body = ruleSchema.parse(req.body)
-    const rule = await createRepricingRule(req.user.tenantId, body)
+    const rule = await createRepricingRule(req.user.tenantId, body as any)
     return reply.status(201).send(rule)
   })
 

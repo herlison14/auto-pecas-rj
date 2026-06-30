@@ -14,7 +14,7 @@ export async function createNotification(tenantId: string, data: {
       title: data.title,
       body: data.body,
       link: data.link,
-      metadata: data.metadata ?? {},
+      metadata: (data.metadata ?? {}) as any,
     },
   })
 }

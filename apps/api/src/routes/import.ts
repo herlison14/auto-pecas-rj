@@ -5,7 +5,6 @@ export async function importRoutes(app: FastifyInstance) {
   // POST /import/products — multipart upload of CSV or XLSX
   app.post('/products', {
     onRequest: [app.authenticate],
-    config: { rawBody: false },
   }, async (req, reply) => {
     const data = await req.file()
     if (!data) return reply.status(400).send({ error: 'Nenhum arquivo enviado' })

@@ -2,8 +2,10 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Package, MapPin, FileText, Truck, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowLeft, Package, MapPin, FileText, Truck, RefreshCw, Printer, Download } from 'lucide-react'
 import { api } from '@/lib/api'
+import { printDanfe, printShippingLabel } from '@/components/ui/auto-print-agent'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -23,11 +25,11 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warni
 }
 
 const NFE_CONFIG: Record<string, { label: string; color: string }> = {
-  PENDING:    { label: 'NF-e pendente',   color: 'text-amber-600' },
-  EMITTING:   { label: 'Emitindo NF-e',   color: 'text-blue-600' },
-  ISSUED:     { label: 'NF-e emitida',    color: 'text-emerald-600' },
-  ERROR:      { label: 'Erro na NF-e',    color: 'text-red-600' },
-  CANCELLED:  { label: 'NF-e cancelada',  color: 'text-muted-foreground' },
+  PENDING:    { label: 'NF-e em processamento', color: 'text-blue-600' },
+  AUTHORIZED: { label: 'NF-e autorizada',       color: 'text-emerald-600' },
+  REJECTED:   { label: 'NF-e rejeitada',        color: 'text-red-600' },
+  CANCELLED:  { label: 'NF-e cancelada',        color: 'text-muted-foreground' },
+  NONE:       { label: 'NF-e não emitida',      color: 'text-amber-600' },
 }
 
 
@@ -54,6 +56,47 @@ export default function OrderDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders', id] }),
   })
 
+  const [printing, setPrinting] = useState(false)
+  const [printingLabel, setPrintingLabel] = useState(false)
+  const [labelError, setLabelError] = useState('')
+
+  async function handlePrint() {
+    setPrinting(true)
+    try {
+      await printDanfe(id)
+      await api.post(`/nfe/orders/${id}/printed`)
+    } finally {
+      setPrinting(false)
+    }
+  }
+
+  async function handlePrintLabel() {
+    setPrintingLabel(true)
+    setLabelError('')
+    try {
+      await printShippingLabel(id)
+    } catch (err: any) {
+      // erro vem como Blob quando responseType é blob — extrai a mensagem
+      let msg = 'Erro ao buscar a etiqueta'
+      const data = err?.response?.data
+      if (data instanceof Blob) {
+        try { msg = JSON.parse(await data.text()).message ?? msg } catch { /* mantém genérica */ }
+      } else if (data?.message) {
+        msg = data.message
+      }
+      setLabelError(msg)
+    } finally {
+      setPrintingLabel(false)
+    }
+  }
+
+  async function handleDownloadPdf() {
+    const res = await api.get(`/nfe/orders/${id}/pdf`, { responseType: 'blob' })
+    const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    window.open(url, '_blank')
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }
+
   if (isLoading || !order) {
     return (
       <div className="p-6 space-y-4">
@@ -67,7 +110,7 @@ export default function OrderDetailPage() {
   }
 
   const statusCfg = STATUS_CONFIG[order.status] ?? { label: order.status, variant: 'secondary' as const }
-  const nfeCfg = NFE_CONFIG[order.nfeStatus ?? 'PENDING']
+  const nfeCfg = NFE_CONFIG[order.nfeStatus ?? 'NONE'] ?? NFE_CONFIG.NONE
   const addr = order.shippingAddr as Record<string, string> | null
 
   return (
@@ -93,13 +136,29 @@ export default function OrderDetailPage() {
               <Truck className="h-4 w-4" /> {markShipped.isPending ? 'Processando...' : 'Marcar como enviado'}
             </Button>
           )}
-          {order.nfeStatus !== 'ISSUED' && order.nfeStatus !== 'EMITTING' && order.status === 'CONFIRMED' && (
+          {order.marketplace === 'MERCADO_LIVRE' && ['CONFIRMED', 'SHIPPED'].includes(order.status) && (
+            <Button size="sm" variant="outline" onClick={() => handlePrintLabel()} disabled={printingLabel}>
+              <Truck className="h-4 w-4" /> {printingLabel ? 'Buscando...' : 'Imprimir etiqueta'}
+            </Button>
+          )}
+          {order.nfeStatus !== 'AUTHORIZED' && order.nfeStatus !== 'PENDING' && order.status === 'CONFIRMED' && (
             <Button size="sm" onClick={() => emitNfe.mutate()} disabled={emitNfe.isPending}>
               <FileText className="h-4 w-4" /> {emitNfe.isPending ? 'Emitindo...' : 'Emitir NF-e'}
             </Button>
           )}
+          {order.nfeStatus === 'AUTHORIZED' && (
+            <Button size="sm" variant="outline" onClick={() => handlePrint()} disabled={printing}>
+              <Printer className="h-4 w-4" /> {printing ? 'Preparando...' : 'Imprimir DANFE'}
+            </Button>
+          )}
         </div>
       </div>
+
+      {labelError && (
+        <div className="rounded-lg px-4 py-3 text-sm" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', color: '#fbbf24' }}>
+          {labelError}
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Itens do pedido */}
@@ -111,7 +170,8 @@ export default function OrderDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+<table className="w-full text-sm">
                 <thead className="border-b bg-muted/30">
                   <tr>
                     {['Produto', 'Qtd', 'Preço unit.', 'Total'].map((h) => (
@@ -133,6 +193,7 @@ export default function OrderDetailPage() {
                   ))}
                 </tbody>
               </table>
+</div>
               <div className="border-t px-4 py-3 space-y-1.5">
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Subtotal</span>
@@ -195,12 +256,17 @@ export default function OrderDetailPage() {
                 <RefreshCw className={cn('h-4 w-4', nfeCfg.color)} />
                 <span className={cn('text-sm font-semibold', nfeCfg.color)}>{nfeCfg.label}</span>
               </div>
-              {order.nfeStatus === 'ISSUED' && (
-                <Button variant="outline" size="sm" className="w-full" asChild>
-                  <a href={`/api/nfe/orders/${id}/pdf`} target="_blank">Baixar PDF</a>
-                </Button>
+              {order.nfeStatus === 'AUTHORIZED' && (
+                <div className="flex flex-col gap-2">
+                  <Button size="sm" className="w-full" onClick={() => handlePrint()} disabled={printing}>
+                    <Printer className="h-4 w-4" /> {printing ? 'Preparando...' : 'Imprimir DANFE'}
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleDownloadPdf()}>
+                    <Download className="h-4 w-4" /> Baixar PDF
+                  </Button>
+                </div>
               )}
-              {(!order.nfeStatus || order.nfeStatus === 'PENDING') && order.status === 'CONFIRMED' && (
+              {(!order.nfeStatus || order.nfeStatus === 'REJECTED') && order.status === 'CONFIRMED' && (
                 <Button size="sm" className="w-full" onClick={() => emitNfe.mutate()} disabled={emitNfe.isPending}>
                   {emitNfe.isPending ? 'Emitindo...' : 'Emitir NF-e'}
                 </Button>

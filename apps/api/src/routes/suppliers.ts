@@ -5,6 +5,7 @@ import {
   listPurchaseOrders, getPurchaseOrder, createPurchaseOrder,
   sendPurchaseOrder, receivePurchaseOrder, cancelPurchaseOrder,
 } from '../services/supplier.service'
+import { requireRole } from '../lib/rbac'
 
 const itemSchema = z.object({
   productId: z.string(),
@@ -16,13 +17,13 @@ export async function suppliersRoutes(app: FastifyInstance) {
   // ── Suppliers ──────────────────────────────────────────────────────────────
 
   app.get('/', { onRequest: [app.authenticate] }, async (req) => {
-    const { tenantId } = (req as any).user
-    const { search, activeOnly } = (req.query as any)
+    const { tenantId } = req.user
+    const { search, activeOnly } = req.query as { search?: string; activeOnly?: string }
     return listSuppliers(tenantId, { search, activeOnly: activeOnly === 'true' })
   })
 
   app.post('/', { onRequest: [app.authenticate] }, async (req, reply) => {
-    const { tenantId } = (req as any).user
+    const { tenantId } = req.user
     const body = z.object({
       name: z.string().min(1),
       cnpj: z.string().optional(),
@@ -36,15 +37,15 @@ export async function suppliersRoutes(app: FastifyInstance) {
   })
 
   app.get('/:id', { onRequest: [app.authenticate] }, async (req, reply) => {
-    const { tenantId } = (req as any).user
+    const { tenantId } = req.user
     const { id } = req.params as { id: string }
     const s = await getSupplier(tenantId, id)
     if (!s) return reply.code(404).send({ error: 'Fornecedor não encontrado' })
     return s
   })
 
-  app.patch('/:id', { onRequest: [app.authenticate] }, async (req, reply) => {
-    const { tenantId } = (req as any).user
+  app.patch('/:id', { onRequest: [app.authenticate], preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
+    const { tenantId } = req.user
     const { id } = req.params as { id: string }
     const body = z.object({
       name: z.string().min(1).optional(),
@@ -59,8 +60,8 @@ export async function suppliersRoutes(app: FastifyInstance) {
     return reply.code(204).send()
   })
 
-  app.delete('/:id', { onRequest: [app.authenticate] }, async (req, reply) => {
-    const { tenantId } = (req as any).user
+  app.delete('/:id', { onRequest: [app.authenticate], preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
+    const { tenantId } = req.user
     const { id } = req.params as { id: string }
     await deleteSupplier(tenantId, id)
     return reply.code(204).send()
@@ -69,8 +70,8 @@ export async function suppliersRoutes(app: FastifyInstance) {
   // ── Purchase Orders ────────────────────────────────────────────────────────
 
   app.get('/purchase-orders', { onRequest: [app.authenticate] }, async (req) => {
-    const { tenantId } = (req as any).user
-    const { status, supplierId, page, limit } = req.query as any
+    const { tenantId } = req.user
+    const { status, supplierId, page, limit } = req.query as { status?: string; supplierId?: string; page?: string; limit?: string }
     return listPurchaseOrders(tenantId, {
       status,
       supplierId,
@@ -80,7 +81,7 @@ export async function suppliersRoutes(app: FastifyInstance) {
   })
 
   app.post('/purchase-orders', { onRequest: [app.authenticate] }, async (req, reply) => {
-    const { tenantId } = (req as any).user
+    const { tenantId } = req.user
     const body = z.object({
       supplierId: z.string(),
       expectedAt: z.string().optional(),
@@ -92,7 +93,7 @@ export async function suppliersRoutes(app: FastifyInstance) {
   })
 
   app.get('/purchase-orders/:id', { onRequest: [app.authenticate] }, async (req, reply) => {
-    const { tenantId } = (req as any).user
+    const { tenantId } = req.user
     const { id } = req.params as { id: string }
     const po = await getPurchaseOrder(tenantId, id)
     if (!po) return reply.code(404).send({ error: 'Ordem não encontrada' })
@@ -100,14 +101,14 @@ export async function suppliersRoutes(app: FastifyInstance) {
   })
 
   app.post('/purchase-orders/:id/send', { onRequest: [app.authenticate] }, async (req, reply) => {
-    const { tenantId } = (req as any).user
+    const { tenantId } = req.user
     const { id } = req.params as { id: string }
     await sendPurchaseOrder(tenantId, id)
     return reply.code(204).send()
   })
 
   app.post('/purchase-orders/:id/receive', { onRequest: [app.authenticate] }, async (req, reply) => {
-    const { tenantId } = (req as any).user
+    const { tenantId } = req.user
     const { id } = req.params as { id: string }
     const { items, warehouseId } = z.object({
       warehouseId: z.string(),
@@ -117,8 +118,8 @@ export async function suppliersRoutes(app: FastifyInstance) {
     return po
   })
 
-  app.post('/purchase-orders/:id/cancel', { onRequest: [app.authenticate] }, async (req, reply) => {
-    const { tenantId } = (req as any).user
+  app.post('/purchase-orders/:id/cancel', { onRequest: [app.authenticate], preHandler: [requireRole('OWNER', 'ADMIN')] }, async (req, reply) => {
+    const { tenantId } = req.user
     const { id } = req.params as { id: string }
     await cancelPurchaseOrder(tenantId, id)
     return reply.code(204).send()

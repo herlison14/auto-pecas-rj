@@ -1,9 +1,12 @@
+import './instrument'
+import * as Sentry from '@sentry/node'
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import rateLimit from '@fastify/rate-limit'
 import multipart from '@fastify/multipart'
 import helmet from '@fastify/helmet'
+import { prisma } from '@sellsync/database'
 
 // Fail fast on misconfigured secrets — prevents predictable defaults reaching production
 const REQUIRED_SECRETS = ['JWT_SECRET', 'DATABASE_URL'] as const
@@ -12,6 +15,9 @@ for (const key of REQUIRED_SECRETS) {
 }
 if (process.env.JWT_SECRET === 'change-me-in-production') {
   throw new Error('JWT_SECRET must be changed from the default example value')
+}
+if (!process.env.ENCRYPTION_KEY) {
+  console.warn('[WARN] ENCRYPTION_KEY not set — marketplace tokens stored in plaintext. Set ENCRYPTION_KEY (openssl rand -hex 32) in production.')
 }
 import { ordersRoutes } from './routes/orders'
 import { inventoryRoutes } from './routes/inventory'
@@ -39,9 +45,28 @@ import { exportRoutes } from './routes/export'
 import { emailSettingsRoutes } from './routes/email-settings'
 import { customersRoutes } from './routes/customers'
 import { twoFactorRoutes } from './routes/two-factor'
+import { funnelDiagnosticsRoutes } from './routes/funnel-diagnostics'
 import { startWorkers } from './workers'
 
-const app = Fastify({ logger: true })
+const app = Fastify({
+  logger: {
+    level: process.env.LOG_LEVEL ?? 'info',
+    redact: {
+      paths: [
+        'req.headers.authorization',
+        'req.body.senha',
+        'req.body.password',
+        'req.body.token',
+        'req.body.accessToken',
+        'req.body.refreshToken',
+        'req.body.smtpPass',
+        'req.body.resendApiKey',
+        'req.body.cvv',
+      ],
+      censor: '[REDACTED]',
+    },
+  },
+})
 
 async function bootstrap() {
   // Security headers — must be registered before routes
@@ -50,25 +75,59 @@ async function bootstrap() {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'"],
         imgSrc: ["'self'", 'data:', 'https:'],
         connectSrc: ["'self'"],
         frameSrc: ["'none'"],
         objectSrc: ["'none'"],
       },
     },
+    hsts: { maxAge: 31_536_000, includeSubDomains: true, preload: true },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     crossOriginEmbedderPolicy: false,
   })
 
-  const allowedOrigin = process.env.WEB_URL
-  if (!allowedOrigin) app.log.warn('WEB_URL not set — CORS is open to all origins (dev only)')
-  await app.register(cors, { origin: allowedOrigin ?? '*' })
+  const webUrl = (process.env.WEB_URL ?? '').replace(/\/+$/, '') // normaliza barra final
+  if (!webUrl) app.log.warn('WEB_URL not set — CORS restrito a *.vercel.app e localhost')
+  await app.register(cors, {
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true) // curl, healthchecks, server-to-server
+      const normalized = origin.replace(/\/+$/, '')
+      const ok =
+        (webUrl && normalized === webUrl) ||
+        /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(normalized) ||
+        /^http:\/\/localhost(:\d+)?$/.test(normalized)
+      cb(null, ok)
+    },
+  })
   await app.register(jwt, { secret: process.env.JWT_SECRET! })
   await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })
+
+  Sentry.setupFastifyErrorHandler(app)
+
+  app.setErrorHandler((err: Error & { statusCode?: number }, req, reply) => {
+    app.log.error(err)
+    const status = err.statusCode ?? 500
+    reply.code(status).send({
+      error: err.name ?? 'InternalServerError',
+      message: status >= 500 ? 'Erro interno do servidor' : err.message,
+    })
+  })
+
   await app.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } }) // 10 MB
 
+  // Enrich Pino logs with userId + tenantId after JWT is verified (no-op on public routes)
+  app.addHook('preHandler', async (req) => {
+    if (req.user) {
+      req.log = req.log.child({
+        userId: req.user.userId,
+        tenantId: req.user.tenantId,
+      })
+    }
+  })
+
   // Shared auth decorator — all routes using app.authenticate go through this
-  app.decorate('authenticate', async function (req: any, reply: any) {
+  app.decorate('authenticate', async function (req: import('fastify').FastifyRequest, reply: import('fastify').FastifyReply) {
     try {
       await req.jwtVerify()
     } catch (err) {
@@ -102,13 +161,31 @@ async function bootstrap() {
   await app.register(emailSettingsRoutes,       { prefix: '/email-settings' })
   await app.register(customersRoutes,           { prefix: '/customers' })
   await app.register(twoFactorRoutes,           { prefix: '/2fa' })
+  await app.register(funnelDiagnosticsRoutes,   { prefix: '/funnel-diagnostics' })
 
-  // Health probe for load balancers / Kubernetes
-  app.get('/healthz', async () => ({ status: 'ok', uptime: process.uptime() }))
+  // Health probe — validates DB connectivity for load balancers / Kubernetes
+  app.get('/healthz', async (req, reply) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`
+      return reply.send({ status: 'ok', uptime: process.uptime(), db: 'ok' })
+    } catch {
+      req.log.error('Health check: DB unreachable')
+      return reply.code(503).send({ status: 'degraded', uptime: process.uptime(), db: 'error' })
+    }
+  })
 
   await startWorkers()
 
   await app.listen({ port: Number(process.env.PORT ?? 3001), host: '0.0.0.0' })
+
+  const shutdown = async (signal: string) => {
+    app.log.info(`${signal} received — shutting down`)
+    await app.close()
+    await Sentry.flush(2000)
+    process.exit(0)
+  }
+  process.on('SIGTERM', () => { void shutdown('SIGTERM') })
+  process.on('SIGINT',  () => { void shutdown('SIGINT') })
 }
 
 bootstrap().catch((err) => {

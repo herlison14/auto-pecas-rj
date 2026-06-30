@@ -7,11 +7,13 @@ import { MarketplaceCard } from '@/components/integrations/marketplace-card'
 import { Button } from '@/components/ui/button'
 
 const AVAILABLE_MARKETPLACES = [
-  { id: 'MERCADO_LIVRE', name: 'Mercado Livre', logo: '/ml.svg', oauthPath: '/integrations/mercadolivre/connect' },
-  { id: 'SHOPEE', name: 'Shopee', logo: '/shopee.svg', oauthPath: '/integrations/shopee/connect' },
-  { id: 'AMAZON', name: 'Amazon', logo: '/amazon.svg', oauthPath: '/integrations/amazon/connect' },
-  { id: 'MAGALU', name: 'Magazine Luiza', logo: '/magalu.svg', oauthPath: '/integrations/magalu/connect' },
-  { id: 'AMERICANAS', name: 'Americanas', logo: '/americanas.svg', oauthPath: '/integrations/americanas/connect' },
+  { id: 'MERCADO_LIVRE', name: 'Mercado Livre', slug: 'mercadolivre', emoji: '🟡', color: '#FFE600' },
+  { id: 'SHOPEE',        name: 'Shopee',        slug: 'shopee',       emoji: '🟠', color: '#FF5722' },
+  { id: 'AMAZON',        name: 'Amazon',        slug: 'amazon',       emoji: '🔵', color: '#FF9900' },
+  { id: 'MAGALU',        name: 'Magazine Luiza', slug: 'magalu',      emoji: '🟢', color: '#0066CC' },
+  { id: 'AMERICANAS',    name: 'Americanas',    slug: 'americanas',   emoji: '🔴', color: '#CC0000' },
+  { id: 'SHEIN',         name: 'Shein',         slug: 'shein',        emoji: '⚫', color: '#111111' },
+  { id: 'TIKTOK_SHOP',   name: 'TikTok Shop',   slug: 'tiktokshop',   emoji: '🎵', color: '#FE2C55' },
 ]
 
 export default function IntegrationsPage() {

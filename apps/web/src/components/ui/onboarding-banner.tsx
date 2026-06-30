@@ -25,8 +25,12 @@ export function OnboardingBanner() {
       >
         Configurar agora <ArrowRight className="h-3.5 w-3.5" />
       </Link>
-      <button onClick={() => setDismissed(true)} className="text-muted-foreground hover:text-foreground shrink-0">
-        <X className="h-3.5 w-3.5" />
+      <button
+        onClick={() => setDismissed(true)}
+        aria-label="Fechar aviso de configuração"
+        className="text-muted-foreground hover:text-foreground shrink-0"
+      >
+        <X className="h-3.5 w-3.5" aria-hidden="true" />
       </button>
     </div>
   )

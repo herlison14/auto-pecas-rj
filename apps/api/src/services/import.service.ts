@@ -1,5 +1,5 @@
-import ExcelJS from 'exceljs'
 import { prisma } from '@sellsync/database'
+import { parseTabularBuffer, toNum } from '../lib/spreadsheet'
 
 export interface ImportRow {
   sku: string
@@ -23,57 +23,28 @@ export interface ImportResult {
   errors: Array<{ row: number; sku: string; reason: string }>
 }
 
-function toNum(v: unknown): number | undefined {
-  const n = Number(v)
-  return isNaN(n) || v === '' || v == null ? undefined : n
-}
+export async function parseSpreadsheet(buffer: Buffer, _mimetype: string): Promise<ImportRow[]> {
+  const rows = await parseTabularBuffer(buffer)
 
-export async function parseSpreadsheet(buffer: Buffer, mimetype: string): Promise<ImportRow[]> {
-  let rawRows: Record<string, unknown>[]
+  return rows.map((norm) => {
+    const get = (...keys: string[]) => keys.map((k) => norm[k]).find((v) => v != null && v !== '')
 
-  if (mimetype === 'text/csv' || (mimetype === 'application/octet-stream' && !buffer.slice(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04])))) {
-    // CSV: split lines
-    const text = buffer.toString('utf8')
-    const lines = text.split(/\r?\n/).filter(Boolean)
-    const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''))
-    rawRows = lines.slice(1).map((line) => {
-      const vals = line.split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
-      return Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? '']))
-    })
-  } else {
-    // XLSX: magic bytes 50 4B 03 04 (ZIP/Office Open XML)
-    const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load(buffer)
-    const ws = wb.worksheets[0]
-    if (!ws) return []
-    const headers: string[] = []
-    ws.getRow(1).eachCell((cell) => headers.push(String(cell.value ?? '')))
-    rawRows = []
-    ws.eachRow((row, rowNum) => {
-      if (rowNum === 1) return
-      const obj: Record<string, unknown> = {}
-      row.eachCell({ includeEmpty: true }, (cell, colNum) => {
-        obj[headers[colNum - 1] ?? colNum] = cell.value ?? ''
-      })
-      rawRows.push(obj)
-    })
-  }
-
-  return rawRows.map((row) => ({
-    sku: String(row['sku'] ?? row['SKU'] ?? '').trim(),
-    name: String(row['name'] ?? row['nome'] ?? row['Nome'] ?? '').trim(),
-    description: String(row['description'] ?? row['descricao'] ?? row['descrição'] ?? '').trim() || undefined,
-    brand: String(row['brand'] ?? row['marca'] ?? row['Marca'] ?? '').trim() || undefined,
-    ncm: String(row['ncm'] ?? row['NCM'] ?? '').replace(/\D/g, '') || undefined,
-    gtin: String(row['gtin'] ?? row['ean'] ?? row['EAN'] ?? row['GTIN'] ?? '').trim() || undefined,
-    weight: toNum(row['weight'] ?? row['peso'] ?? row['Peso (kg)']),
-    height: toNum(row['height'] ?? row['altura'] ?? row['Altura (cm)']),
-    width: toNum(row['width'] ?? row['largura'] ?? row['Largura (cm)']),
-    length: toNum(row['length'] ?? row['comprimento'] ?? row['Comprimento (cm)']),
-    images: String(row['images'] ?? row['imagens'] ?? row['imagem'] ?? '').trim() || undefined,
-    price: toNum(row['price'] ?? row['preco'] ?? row['preço'] ?? row['Preço']),
-    stock: toNum(row['stock'] ?? row['estoque'] ?? row['Estoque']),
-  }))
+    return {
+      sku: String(get('sku', 'codigo') ?? '').trim(),
+      name: String(get('name', 'nome', 'produto') ?? '').trim(),
+      description: String(get('description', 'descricao') ?? '').trim() || undefined,
+      brand: String(get('brand', 'marca') ?? '').trim() || undefined,
+      ncm: String(get('ncm') ?? '').replace(/\D/g, '') || undefined,
+      gtin: String(get('gtin', 'ean', 'codigo de barras') ?? '').trim() || undefined,
+      weight: toNum(get('weight', 'peso')),
+      height: toNum(get('height', 'altura')),
+      width: toNum(get('width', 'largura')),
+      length: toNum(get('length', 'comprimento')),
+      images: String(get('images', 'imagens', 'imagem', 'fotos') ?? '').trim() || undefined,
+      price: toNum(get('price', 'preco')),
+      stock: toNum(get('stock', 'estoque', 'quantidade')),
+    }
+  })
 }
 
 export async function importProducts(

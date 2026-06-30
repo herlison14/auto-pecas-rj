@@ -86,7 +86,7 @@ function RevenueTooltip({ active, payload, label }: any) {
     <div className="rounded-lg border bg-card shadow-lg px-3 py-2.5 text-xs">
       <p className="font-semibold text-muted-foreground mb-1">{label}</p>
       <p className="font-bold text-base">{fmtCurrency(payload[0]?.value ?? 0)}</p>
-      <p className="text-muted-foreground">{payload[1]?.value ?? 0} pedidos</p>
+      <p className="text-muted-foreground">{payload[0]?.payload?.orders ?? 0} pedidos</p>
     </div>
   )
 }
@@ -154,6 +154,8 @@ export default function DashboardPage() {
           <div className="flex gap-1 rounded-lg border bg-muted/60 p-1">
             {PERIODS.map((p) => (
               <button key={p.days} onClick={() => setDays(p.days)}
+                aria-label={`Últimos ${p.days} dias`}
+                aria-pressed={days === p.days}
                 className={cn('rounded-md px-3 py-1 text-xs font-semibold transition-all',
                   days === p.days ? 'bg-card shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
                 {p.label}
@@ -238,11 +240,6 @@ export default function DashboardPage() {
                     type="monotone" dataKey="revenue" stroke="hsl(var(--primary))"
                     strokeWidth={2} fill="url(#grad)" dot={false} activeDot={{ r: 4 }}
                   />
-                  <Area
-                    type="monotone" dataKey="orders" stroke="hsl(var(--muted-foreground))"
-                    strokeWidth={1.5} fill="transparent" dot={false} strokeDasharray="4 2"
-                    yAxisId={1} hide
-                  />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -316,11 +313,12 @@ export default function DashboardPage() {
                 Sem vendas no período
               </div>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/30">
                   <tr>
                     {['#', 'Produto', 'Qtd', 'Receita'].map((h) => (
-                      <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">{h}</th>
+                      <th key={h} scope="col" className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -340,6 +338,7 @@ export default function DashboardPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -352,9 +351,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               {[
-                { href: '/dashboard/orders',       label: 'Pedidos pendentes',  desc: `${extras?.pendingOrders ?? 0} aguardando`, color: 'hover:bg-amber-500/10/10' },
-                { href: '/dashboard/inventory',    label: 'Estoque baixo',      desc: `${extras?.lowStockCount ?? 0} produtos`, color: 'hover:bg-red-500/10/10' },
-                { href: '/dashboard/integrations', label: 'Canais ativos',      desc: `${extras?.connectedStores ?? 0} conectados`, color: 'hover:bg-blue-500/10/10' },
+                { href: '/dashboard/orders',       label: 'Pedidos pendentes',  desc: `${extras?.pendingOrders ?? 0} aguardando`, color: 'hover:bg-amber-500/10' },
+                { href: '/dashboard/inventory',    label: 'Estoque baixo',      desc: `${extras?.lowStockCount ?? 0} produtos`, color: 'hover:bg-red-500/10' },
+                { href: '/dashboard/integrations', label: 'Canais ativos',      desc: `${extras?.connectedStores ?? 0} conectados`, color: 'hover:bg-blue-500/10' },
                 { href: '/dashboard/catalog',      label: 'Sync catálogo',      desc: 'Verificar divergências', color: 'hover:bg-violet-500/10' },
               ].map(({ href, label, desc, color }) => (
                 <Link key={href} href={href}
